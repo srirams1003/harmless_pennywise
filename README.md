@@ -5,17 +5,10 @@ First install the necessary python packages:
 pip install fastapi uvicorn pymysql python-dotenv 
 ```
 
-Optional: If you want to inspect the database manually (out of curiosity or to debug a query):
+Next, pull the docker image for MySQL:
 ```sh
-docker exec -it harmless_pennywise_db mysql -uroot -p
+docker pull mysql:latest
 ```
-- The password is `root`, as set above.
-- Then you can use commands like 
-    - `show databases;`
-    - `use harmless_pennywise`
-    - `show tables;`
-    - `select * from users;`
-
 
 ## Starting the backend service:
 
@@ -23,6 +16,8 @@ Now, to run the backend service for the very first time (or if you delete the do
 ```sh
 ./clean_startup.sh
 ```
+
+- Note: Based on how good your PC is, you may need to increase the sleep time in the startup scripts to give the mysql container enough time to start before executing the subsequent commands.
 
 If you already have the container created before and just need to start it back up, do:
 ```sh
@@ -33,6 +28,18 @@ Now, you can access the backend endpoints from a browser or API on
 `localhost:8000/users`
 and 
 `localhost:8000/`
+
+
+Optional: If you want to inspect the database manually (out of curiosity or to debug a query):
+```sh
+docker exec -it harmless_pennywise_db mysql -uroot -p
+```
+- The password is `root`, as set above.
+- Then you can use commands like 
+    - `show databases;`
+    - `use harmless_pennywise`
+    - `show tables;`
+    - `select * from users;`
 
 
 ## Setup for Frontend:
