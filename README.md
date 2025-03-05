@@ -19,7 +19,24 @@ docker exec -it harmless_pennywise_db mysql -uroot -p
     - `show tables;`
     - `select * from users;`
 
+To run the backend service using FastAPI, from inside the backend directory, run:
+```sh
+uvicorn main:app --reload
+```
+
 Now, you can see the preliminary output on 
 `localhost:8000/users`
 and 
 `localhost:8000/`
+
+To first install the necessary frontend packages, from inside the frontend directory, run:
+```sh
+npm install
+```
+
+To run the frontend service using React, from inside the frontend directory, run:
+```sh
+npm run dev
+```
+
+You can now access the frontend on `localhost:5173/`
