@@ -5,7 +5,7 @@ First install the necessary python packages:
 pip install fastapi uvicorn pymysql python-dotenv 
 ```
 
-To inspect the database manually:
+Optional: If you want to inspect the database manually (out of curiosity or to debug a query):
 ```sh
 docker exec -it harmless_pennywise_db mysql -uroot -p
 ```
