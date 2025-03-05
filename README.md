@@ -18,3 +18,8 @@ docker exec -it harmless_pennywise_db mysql -uroot -p
     - `use harmless_pennywise`
     - `show tables;`
     - `select * from users;`
+
+Now, you can see the preliminary output on 
+`localhost:8000/users`
+and 
+`localhost:8000/`
