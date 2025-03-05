@@ -34,6 +34,8 @@ def get_users():
     return result
 
 # Insert a new user
+# TODO: this method needs to be modified because we do not have add user names into the db. At least, that's how the dataset we use does things.
+# this is just a sample method below
 @app.post("/users")
 def add_user(name: str, age: int):
     conn = get_db_connection()
