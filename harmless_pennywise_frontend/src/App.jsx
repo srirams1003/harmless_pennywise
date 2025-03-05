@@ -1,43 +1,47 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
-function getUsersData(){
-  fetch('http://localhost:8000/users')
-  .then(response => response.json())
-  .then(data => console.log(data));
+function UserList({ users }) {
+  // need to only show the first 5 users for now, as proof of concept
+  users = users.slice(0, 5)
+
+  return (
+    <div style={{fontSize: '15px', color: 'cyan'}}>
+      <hr/>
+      {users.map(user => (
+        <div key={user.id}>
+          <p >User {user.id}.  Age: {user.age} <br /> Gender: {user.gender}   </p>
+          <hr />
+        </div>
+
+      ))}
+    </div>
+  )
 }
 
 function App() {
   const [count, setCount] = useState(0)
+  const [users, setUsers] = useState([])
+
+  const getUsersData = () => {
+    fetch('http://localhost:8000/users')
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        setUsers(data);
+      })
+      .catch(error => console.error('Error fetching users:', error));
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card" style={{ display: 'flex', flexDirection: 'column' , justifyContent: 'space-between', height: '200px' }}>
-        <p>Edit this page in <code>src/App.jsx</code> and save to test HMR updates.</p>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+      <h1>Harmless PennyWise</h1>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', height: '200px' }}>
         <button onClick={getUsersData}>
           Get Users Data
-        </button> 
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+        </button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <UserList users={users} />
     </>
   )
 }

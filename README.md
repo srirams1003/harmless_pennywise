@@ -24,6 +24,11 @@ docker exec -it harmless_pennywise_db mysql -uroot -p
     - `show tables;`
     - `select * from users;`
 
+Before you run the backend service, make sure to import the data from the csv file into the MySQL database server running on the docker container, by running the command below:
+```sh
+python database.py
+```
+
 To run the backend service using FastAPI, from inside the backend directory, run:
 ```sh
 uvicorn main:app --reload
