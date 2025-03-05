@@ -2,15 +2,15 @@ import { useState } from 'react'
 import './App.css'
 
 function UserList({ users }) {
-  // need to only show the first 5 users for now, as proof of concept
-  users = users.slice(0, 5)
+  // need to only show the first 20 users for now, as proof of concept
+  users = users.slice(0, 20)
 
   return (
     <div style={{fontSize: '15px', color: 'cyan'}}>
       <hr/>
       {users.map(user => (
         <div key={user.id}>
-          <p >User {user.id}.  Age: {user.age} <br /> Gender: {user.gender}   </p>
+          <p> <p style={{color: "pink"}}>User {user.id}:</p>  Age: {user.age} <br /> Gender: {user.gender} <br/> Major: {user.major} <br/> Preferred Payment Method: {user.preferred_payment_method}  </p>
           <hr />
         </div>
 
