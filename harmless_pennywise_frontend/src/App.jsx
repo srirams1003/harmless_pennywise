@@ -3,6 +3,12 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
+function getUsersData(){
+  fetch('http://localhost:8000/users')
+  .then(response => response.json())
+  .then(data => console.log(data));
+}
+
 function App() {
   const [count, setCount] = useState(0)
 
@@ -17,10 +23,14 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <div className="card">
+      <div className="card" style={{ display: 'flex', flexDirection: 'column' , justifyContent: 'space-between', height: '200px' }}>
+        <p>Edit this page in <code>src/App.jsx</code> and save to test HMR updates.</p>
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
+        <button onClick={getUsersData}>
+          Get Users Data
+        </button> 
         <p>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>

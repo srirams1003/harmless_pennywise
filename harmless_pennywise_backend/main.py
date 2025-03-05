@@ -1,8 +1,23 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 import pymysql
 from database import get_db_connection
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",  # Or the specific origin of your React app
+    "http://localhost",       # In case you access it without the port
+    "*"                      # Optional, allows all origins (for development, not recommended for production)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @app.get("/")
 def read_root():
