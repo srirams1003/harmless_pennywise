@@ -1,0 +1,8 @@
+1. Get latest changes to main branch by doing 'git pull'
+2. Create a new branch for your feature: 'git checkout -b <name_of_your_branch>'
+3. Make changes to the feature you are working on
+4. git add .
+5. git commit -m "<meaningful commit message>"
+6. git push -u origin <name_of_your_branch>
+7. Then make a PR to merge your branch into main
+
