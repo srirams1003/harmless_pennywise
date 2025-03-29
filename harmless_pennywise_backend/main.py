@@ -50,6 +50,45 @@ def add_user(name: str, age: int):
     conn.close()
     return {"message": "User added successfully!"}
 
+@app.post("/initial_data")
+def make_initial_data():
+    # Load boundary_models
+    with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
+        boundary_models = pickle.load(f)
+    
+    log_reg_saver_balanced = boundary_models["saver_balanced"]
+    log_reg_balanced_overspender = boundary_models["balanced_overspender"]
+
+    df = pd.read_csv("./spending_analysis_outputs/student_spending_categorized_gmm.csv")
+
+    # Generate x-values for boundary lines
+    x_vals = np.array([np.round(df["spending_ratio"].max())-1, np.round(df["spending_ratio"].max())])
+
+    # Compute decision boundaries using logistic regression
+    boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
+    boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
+
+    x_vals = x_vals.tolist()
+    boundary_1_y = boundary_1_y.tolist()
+    boundary_2_y = boundary_2_y.tolist()
+
+    boundary_coordinates = {
+        "saver_balanced": [[x_vals[0], boundary_1_y[0]], [x_vals[1], boundary_1_y[1]]],
+        "balanced_overspender": [[x_vals[0], boundary_2_y[0]], [x_vals[1], boundary_2_y[1]]],
+    }
+
+    dataset_points = [
+        [row['spending_category'], row['spending_ratio'], row['total_spending']]
+        for _, row in df.iterrows()
+    ]
+
+    df_original = pd.read_csv("student_spending.csv")
+    df_original = df_original.drop(columns=["Unnamed: 0"])
+
+    original_points = df_original.to_dict(orient='records')
+
+    return {"boundary_coordinates": boundary_coordinates, "dataset_points": dataset_points, "original_points": original_points}
+
 class StudentInput(BaseModel):
     age: int
     gender: str
@@ -130,4 +169,4 @@ def predict_spending_category(new_data:StudentInput):
     boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
     boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
 
-    return [category_label, new_data["spending_ratio"], new_data["total_spending"]]
+    return {"datapoint": [category_label, new_data["spending_ratio"], new_data["total_spending"]]}
