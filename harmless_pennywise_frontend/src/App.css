@@ -52,3 +52,91 @@ to {
 	/* background-color: white; */
 
 }
+
+#input-form{
+	display: flex;
+	flex-direction: column;
+}
+
+#input-form-container {
+	display: flex;
+	flex-direction: column;
+	border: 2px solid #007bff;
+	padding: 20px;
+	margin: 20px auto;
+	width: 900px;
+	background-color: #f9f9f9;
+	border-radius: 8px;
+	font-family: 'Segoe UI', Arial, sans-serif;
+	box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+h2,h3,span {
+	/* color: #007bff; */
+	color: #000000;
+	text-align: center;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+ /* this is a div */
+.form-item { 
+	display: flex;
+	flex-direction: row;
+	justify-content : center;
+	align-items: center;
+}
+
+.form-item-label {
+	padding-right: 60px;
+}
+
+label {
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: #333;
+}
+
+input, select {
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	font-size: 14px;
+	transition: border-color 0.3s ease;
+}
+
+input:focus, select:focus {
+	border-color: #007bff;
+	outline: none;
+}
+
+button {
+	background-color: #007bff;
+	color: white;
+	padding: 12px 16px;
+	font-size: 16px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	margin-top: 20px;
+	transition: background-color 0.3s ease;
+}
+
+button:hover {
+	background-color: #0056b3;
+}
+
+select {
+	background-color: white;
+}
+
+
+#second-view-container {
+	height: 700px;
+	width: 100%;
+	background-color: white;
+}
