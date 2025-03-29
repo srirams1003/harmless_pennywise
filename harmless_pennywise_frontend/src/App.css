@@ -71,8 +71,9 @@ to {
 	box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-h2 {
-	color: #007bff;
+h2,h3,span {
+	/* color: #007bff; */
+	color: #000000;
 	text-align: center;
 }
 
@@ -91,7 +92,7 @@ form {
 }
 
 .form-item-label {
-	padding-right: 120px;
+	padding-right: 60px;
 }
 
 label {
@@ -133,3 +134,9 @@ select {
 	background-color: white;
 }
 
+
+#second-view-container {
+	height: 700px;
+	width: 100%;
+	background-color: white;
+}

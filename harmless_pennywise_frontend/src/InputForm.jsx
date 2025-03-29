@@ -67,18 +67,19 @@ const InputForm = () => {
 
 			const result = await response.json();
 			alert('Form submitted successfully!');
-			console.log(result);
+			console.log("received response from backend: ", result);
 		} catch (error) {
 			console.error('Error submitting form:', error);
 			alert('Submission failed. Please try again.');
 		}
 	};
 
+	// TODO: for all these fields that are being collected from the user but not actually being in the computation, think about what we can do with them
 	const fieldLabels = {
-		age: "Age (in years)",
-		gender: "Gender",
-		year_in_school: "Year in School",
-		major: "Major",
+		age: "Age (in years)", // not used in computations
+		gender: "Gender",// not used in computations
+		year_in_school: "Year in School",// not used in computations
+		major: "Major",// not used in computations
 		monthly_income: "Monthly Income (in USD per month)",
 		financial_aid: "Financial Aid (in USD per semester)",
 		tuition: "Tuition (in USD per semester)",
@@ -91,7 +92,7 @@ const InputForm = () => {
 		technology: "Technology (in USD per month)",
 		health_wellness: "Health & Wellness (in USD per month)",
 		miscellaneous: "Miscellaneous (in USD per month)",
-		preferred_payment_method: "Preferred Payment Method"
+		preferred_payment_method: "Preferred Payment Method"// not used in computations
 	};
 
 	return (
