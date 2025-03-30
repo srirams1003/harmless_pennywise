@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import './App.css';
+import { DataContext } from './context';
 
 const InputForm = () => {
+	const {setDataToPlot} = useContext(DataContext);
+
 	const [formData, setFormData] = useState({
 		age: '',
 		gender: '',
@@ -23,7 +26,7 @@ const InputForm = () => {
 	});
 
 	const handleChange = (e) => {
-		// // uncomment these lines when actually deploying/testing with users
+		// TODO: uncomment these lines when actually deploying/testing with users
 		// const { name, value } = e.target;
 		// setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -33,18 +36,18 @@ const InputForm = () => {
 			"gender": "Male",
 			"year_in_school": "Senior",
 			"major": "Computer Science",
-			"monthly_income": 1200,
-			"financial_aid": 500,
-			"tuition": 50000,
-			"housing": 8000,
-			"food": 350,
-			"transportation": 100,
-			"books_supplies": 200,
-			"entertainment": 150,
-			"personal_care": 800,
-			"technology": 2000,
-			"health_wellness": 1200,
-			"miscellaneous": 900,
+			"monthly_income": 1100,
+			"financial_aid": 600,
+			"tuition": 13000,
+			"housing": 700,
+			"food": 300,
+			"transportation": 160,
+			"books_supplies": 120,
+			"entertainment": 250,
+			"personal_care": 130,
+			"technology": 100,
+			"health_wellness": 200,
+			"miscellaneous": 70,
 			"preferred_payment_method": "Credit/Debit Card"
 		});
 	};
@@ -66,8 +69,24 @@ const InputForm = () => {
 			}
 
 			const result = await response.json();
+			let data_to_plot = {};
+			data_to_plot["all_users_average"] = result["all_users_average"];
+
+			const userDataCopy = { ...formData };
+			// Delete unwanted fields
+			delete userDataCopy.age;
+			delete userDataCopy.gender;
+			delete userDataCopy.year_in_school;
+			delete userDataCopy.major;
+			delete userDataCopy.preferred_payment_method;
+
+			data_to_plot["current_user"] = userDataCopy;
+
+			setDataToPlot(data_to_plot);
+
+			console.log("received response from backend for averages: ", result["all_users_average"]);
 			alert('Form submitted successfully!');
-			console.log("received response from backend: ", result);
+			console.log("received response from backend for form submission: ", result);
 		} catch (error) {
 			console.error('Error submitting form:', error);
 			alert('Submission failed. Please try again.');
@@ -101,13 +120,6 @@ const InputForm = () => {
 			<form id='input-form' onSubmit={handleSubmit}>
 				{Object.entries(formData).map(([key, value]) => (
 					<div className="form-item" key={key}>
-						{ /*
-							<label>
-								{key.replace(/_/g, ' ')}
-								{key === 'monthly_income' || key === 'financial_aid' || key === 'tuition' || key === 'housing' || key === 'food' || key === 'transportation' || key === 'books_supplies' || key === 'entertainment' || key === 'personal_care' || key === 'technology' || key === 'health_wellness' || key === 'miscellaneous' ? ' (in USD per month)' : ''}
-								{key === 'age' ? ' (in years)' : ''}
-							</label>
-							*/ }
 						<label className="form-item-label">{fieldLabels[key] || key.replace(/_/g, ' ')}:</label>
 						{key === 'gender' || key === 'year_in_school' || key === 'preferred_payment_method' ? (
 							<select name={key} value={value} onChange={handleChange} required>

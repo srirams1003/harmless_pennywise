@@ -136,7 +136,13 @@ select {
 
 
 #second-view-container {
-	height: 700px;
+	/* height: 960px; */
+	display:flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 760px;
 	width: 100%;
+	/* width: 900px; */
 	background-color: white;
 }

@@ -50,6 +50,7 @@ def add_user(name: str, age: int):
     conn.close()
     return {"message": "User added successfully!"}
 
+
 @app.post("/initial_data")
 def make_initial_data():
     # Load boundary_models
@@ -89,6 +90,7 @@ def make_initial_data():
 
     return {"boundary_coordinates": boundary_coordinates, "dataset_points": dataset_points, "original_points": original_points}
 
+
 class StudentInput(BaseModel):
     age: int
     gender: str
@@ -107,6 +109,7 @@ class StudentInput(BaseModel):
     health_wellness: float
     miscellaneous: float
     preferred_payment_method: str
+
 
 @app.post("/predict_category")
 # Define function to predict using logistic regression decision boundaries
@@ -169,4 +172,25 @@ def predict_spending_category(new_data:StudentInput):
     boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
     boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
 
-    return {"datapoint": [category_label, new_data["spending_ratio"], new_data["total_spending"]]}
+    # Calculate averages from your dataset (example using pandas)
+    df = pd.read_csv("student_spending.csv")
+    
+    # Calculate averages (excluding the current user)
+    averages = {
+        "monthly_income": df['monthly_income'].mean(),
+        "financial_aid": df['financial_aid'].mean(),
+        "tuition": df['tuition'].mean(),
+        "housing": df['housing'].mean(),
+        "food": df['food'].mean(),
+        "transportation": df['transportation'].mean(),
+        "books_supplies": df['books_supplies'].mean(),
+        "entertainment": df['entertainment'].mean(),
+        "personal_care": df['personal_care'].mean(),
+        "technology": df['technology'].mean(),
+        "health_wellness": df['health_wellness'].mean(),
+        "miscellaneous": df['miscellaneous'].mean(),
+    }
+    
+    return {"all_users_average": averages, "datapoint": [category_label, new_data["spending_ratio"], new_data["total_spending"]]}
+
+
