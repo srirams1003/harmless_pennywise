@@ -17,7 +17,8 @@ const mockData = {
   };
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { DataContext } from './context';
 import * as d3 from 'd3';
 import _ from 'lodash';
 

@@ -1,58 +1,39 @@
 import './App.css'
-import React from 'react';
+import React, {useState, useEffect, useContext} from 'react';
+import { DataContext } from './context';
 import { Bar } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  LogarithmicScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
+	Chart as ChartJS,
+	CategoryScale,
+	LinearScale,
+	LogarithmicScale,
+	BarElement,
+	Title,
+	Tooltip,
+	Legend
 } from 'chart.js';
 
 // ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, Title, Tooltip, Legend);
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, Tooltip); // unregistered Title and Legend because easier to customize this way
 
 const SecondView = () => {
-	let data_to_plot = {
-		all_users_average: {
-			"monthly_income": 1200,
-			"financial_aid": 500,
-			"tuition": 17000,
-			"housing": 800,
-			"food": 350,
-			"transportation": 100,
-			"books_supplies": 200,
-			"entertainment": 150,
-			"personal_care": 200,
-			"technology": 200,
-			"health_wellness": 120,
-			"miscellaneous": 100,
-		},
-		current_user: {
-			"monthly_income": 1100,
-			"financial_aid": 600,
-			"tuition": 13000,
-			"housing": 700,
-			"food": 300,
-			"transportation": 160,
-			"books_supplies": 120,
-			"entertainment": 250,
-			"personal_care": 130,
-			"technology": 100,
-			"health_wellness": 200,
-			"miscellaneous": 70,
-		}
-	};
+	let {dataToPlot} = useContext(DataContext);
 
-	const labels = Object.keys(data_to_plot.all_users_average);
-	const averageData = Object.values(data_to_plot.all_users_average);
-	const userData = Object.values(data_to_plot.current_user);
+	let dataToPlotCopy = {...dataToPlot};
+
+	if (!dataToPlotCopy) return <div>No data available</div>;
+	if (!dataToPlotCopy.all_users_average || !dataToPlotCopy.current_user) return <div></div>;
+
+	const labels = Object.keys(dataToPlotCopy.all_users_average);
+	const averageData = labels.map(key => Number(dataToPlotCopy.all_users_average[key]) || 0);
+	const currentUserData = labels.map(key => Number(dataToPlotCopy.current_user[key]) || 0);
+
+	if (!labels.length || averageData.some(isNaN) || currentUserData.some(isNaN)) {
+		return <div>Error: Invalid data format</div>;
+	}
 
 	// Determine colors based on comparison
-	const userColors = userData.map((value, index) => {
+	const userColors = currentUserData.map((value, index) => {
 		return value > averageData[index] ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)';
 	});
 
@@ -68,7 +49,7 @@ const SecondView = () => {
 			},
 			{
 				label: 'Current User',
-				data: userData,
+				data: currentUserData,
 				backgroundColor: userColors,
 				borderColor: userColors.map(color => color.replace('0.6', '1')),
 				borderWidth: 1
@@ -110,7 +91,7 @@ const SecondView = () => {
 						const datasetIndex = context[0].datasetIndex;
 						if (datasetIndex === 1) {
 							const dataIndex = context[0].dataIndex;
-							const userValue = userData[dataIndex];
+							const userValue = currentUserData[dataIndex];
 							const avgValue = averageData[dataIndex];
 							const difference = userValue - avgValue;
 							const percentage = (Math.abs(difference) / avgValue * 100).toFixed(1);
@@ -132,12 +113,16 @@ const SecondView = () => {
 		scales: {
 			y: {
 				type: 'logarithmic',
-				min: 10,
+				min: 0,
 				ticks: {
+					autoSkip: true,
+					maxTicksLimit: 15, // Reduce number of ticks
+					font: {
+						size: 12 // modify this if the font on the y axis labels is too big
+					},
 					callback: (value) => {
 						if (value >= 1000) return `$${value/1000}k`;
-						if (value >= 10) return `$${value}`;
-						return value;
+						return `$${value}`;
 					},
 				}
 			},
@@ -192,7 +177,15 @@ const SecondView = () => {
 				</div>
 			</div>
 
-			<Bar data={chartData} options={options} />
+			<div style={{ height: '550px', width: '800px', margin: '20px 0' }}>
+				<Bar 
+					data={chartData} 
+					options={{
+						...options,
+						maintainAspectRatio: false
+					}} 
+				/>
+			</div>
 
 			{/* Help text */}
 			<div style={{
@@ -202,8 +195,8 @@ const SecondView = () => {
 				marginTop: '10px'
 			}}>
 				<p>
-					<span style={{ color: 'rgba(255, 99, 132, 0.8)' }}>Red</span> = Higher than average | 
-					<span style={{ color: 'rgba(75, 192, 192, 0.8)' }}> Green</span> = Lower than average
+					<span style={{ color: 'rgba(255, 99, 132, 0.8)' }}>Red</span> = Higher than average user | 
+					<span style={{ color: 'rgba(75, 192, 192, 0.8)' }}> Green</span> = Lower than average user
 				</p>
 			</div>
 		</div>
