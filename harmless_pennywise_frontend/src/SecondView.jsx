@@ -124,12 +124,22 @@ const SecondView = () => {
 						if (value >= 1000) return `$${value/1000}k`;
 						return `$${value}`;
 					},
+				},
+				grid: {
+					display: false,
+					// drawOnChartArea: false,
+					// drawTicks: false,
 				}
 			},
 			x: {
 				type: 'category',
 				barPercentage: 0.6,
-				categoryPercentage: 0.8
+				categoryPercentage: 0.8,
+				grid: {
+					display: false,
+					// drawOnChartArea: false,
+					// drawTicks: false,
+				}
 			}
 		}
 	};
