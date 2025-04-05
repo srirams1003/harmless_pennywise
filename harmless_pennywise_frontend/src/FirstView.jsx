@@ -71,7 +71,7 @@ const FinancialSlider = ({
 // Component for the sliders section
 const FinancialSlidersPanel = ({ userInputs, handleSliderChange }) => {
   return (
-    <div className="mb-8 p-4 bg-gray-100 rounded-lg">
+    <div id='sliders-container' className="mb-8 p-0 bg-gray-100 rounded-lg">
       <h2 className="text-lg font-semibold mb-4">Adjust Your Financial Details</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {sliderConfig.map(config => (
@@ -755,13 +755,7 @@ row.append('text')
   }, [data, userInputs]);
   
   return (
-    <div className="flex flex-col p-4 w-full max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1>
-      
-      <FinancialSlidersPanel 
-        userInputs={userInputs} 
-        handleSliderChange={handleSliderChange}
-      />
+    <div id="first-view-internal-container" className="flex flex-col p-4 w-full max-w-6xl mx-auto">
       
       <div className="bg-white p-4 rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-4">Your Financial Status</h2>
@@ -769,25 +763,31 @@ row.append('text')
           <div className="flex justify-center items-center h-96">
             <p>Loading your financial analysis...</p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center w-full">
-            <svg ref={svgRef} className="border border-gray-300 bg-gray-800" style={{minHeight: '500px', width: '100%'}}></svg>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg w-full">
-  <h3 className="font-semibold mb-2">Key Insights:</h3>
-  <ul className="list-disc pl-5">
-    <li>Your spending pattern suggests you're in the <strong className={`${
-      financialCategory === 'saver' ? 'text-green-600' : 
-      financialCategory === 'balanced' ? 'text-blue-600' : 'text-red-600'
-    }`}>{financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}</strong> category</li>
-    <li>Your total monthly income: <strong>${monthlyIncome.toLocaleString()}</strong></li>
-    <li>Your total monthly spending: <strong>${monthlySpending.toLocaleString()}</strong></li>
-    <li>Your spending ratio: <strong>{spendingRatio.toFixed(2)}x</strong> your income</li>
-    <li>Your savings amount: <strong>${savingsAmount.toLocaleString()}</strong></li>
-  </ul>
-</div>
-          </div>
-        )}
+				) : (
+						<div className="flex flex-col items-center w-full">
+							<svg ref={svgRef} className="border border-gray-300 bg-gray-800" style={{minHeight: '500px', width: '100%'}}></svg>
+							<div className="mt-4 p-4 bg-blue-50 rounded-lg w-full">
+								<h3 className="font-semibold mb-2">Key Insights:</h3>
+								<ul className="list-disc pl-5">
+									<li>Your spending pattern suggests you're in the <strong className={`${
+financialCategory === 'saver' ? 'text-green-600' : 
+financialCategory === 'balanced' ? 'text-blue-600' : 'text-red-600'
+}`}>{financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}</strong> category</li>
+									<li>Your total monthly income: <strong>${monthlyIncome.toLocaleString()}</strong></li>
+									<li>Your total monthly spending: <strong>${monthlySpending.toLocaleString()}</strong></li>
+									<li>Your spending ratio: <strong>{spendingRatio.toFixed(2)}x</strong> your income</li>
+									<li>Your savings amount: <strong>${savingsAmount.toLocaleString()}</strong></li>
+								</ul>
+							</div>
+						</div>
+					)}
       </div>
+
+      <FinancialSlidersPanel 
+        userInputs={userInputs} 
+        handleSliderChange={handleSliderChange}
+      />
+      
       
       {/* Second view - Bar graph for spending categories would go here */}
       {/* <SpendingCategoriesBarChart /> */}
@@ -809,6 +809,7 @@ const FirstView = () => {
 
 	return (
 		<div id="first-view-container">
+			<h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1>
 			{/* <ScatterPlot data={mockData} /> */}
 			<FinancialDashboard />
 		</div>

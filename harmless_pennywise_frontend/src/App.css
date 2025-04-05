@@ -65,6 +65,15 @@ to {
 	box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+#two-view-components-container{
+	display: flex;
+	flex-direction: column;
+	/* padding: 10px; */
+	/* margin: 10px; */
+	width: 100%;
+
+}
+
 h2,h3,span {
 	/* color: #007bff; */
 	/* color: #000; */
@@ -145,6 +154,38 @@ select {
 	/* background-color: white; */ /*TODO: this field can change the whole page's background color if you need quick changes to experiment with dif backgrounds*/
 }
 
+#sliders-container {
+	display:flex;
+	flex-direction: column;
+	/* margin: 10px; */
+	/* padding: 10px; */
+	justify-content: center;
+	align-items: center;
+	/* height: 760px; */
+	/* width: 100%; */
+	/* margin-left: 60%; */
+	/* width: 40%; */
+	/* width: 50%; */
+	/* width: 900px; */
+	/* background-color: white; */
+}
+
+
+#first-view-internal-container {
+	/* height: 960px; */
+	display:flex;
+	flex-direction: row;
+	margin: 0px;
+	padding: 0px;
+	justify-content: center;
+	align-items: center;
+	/* height: 760px; */
+	width: 100%;
+	/* width: 50%; */
+	/* width: 900px; */
+	/* background-color: white; */
+}
+
 #first-view-container {
 	/* height: 960px; */
 	display:flex;
@@ -154,8 +195,8 @@ select {
 	justify-content: center;
 	align-items: center;
 	/* height: 760px; */
-	/* width: 100%; */
-	width: 50%;
+	width: 100%;
+	/* width: 50%; */
 	/* width: 900px; */
 	/* background-color: white; */
 }
@@ -164,13 +205,15 @@ select {
 	height: 960px;
 	display:flex;
 	flex-direction: column;
-	margin: 10px;
+	/* margin: 10px; */
+	margin-left: 10%;
 	padding: 10px;
 	justify-content: start;
 	align-items: center;
 	/* height: 760px; */
 	/* width: 100%; */
 	width: 50%;
+	/* margin-top: -650px; */
 	/* width: 900px; */
 	/* background-color: white; */
 	color: white;

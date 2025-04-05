@@ -18,9 +18,9 @@ function AppContent() {
 
 				{showForm && <InputForm />}
 
-				<div style={{display: 'flex', flexDirection: 'row'}}> {/* TODO: need to change flexdirection later to row*/}
-					<SecondView />
+				<div id="two-view-components-container" style={{display: 'flex', flexDirection: 'column'}}> {/* TODO: need to change flexdirection later to row*/}
 					<FirstView />
+					<SecondView />
 				</div>
 			</div>
 		</>
