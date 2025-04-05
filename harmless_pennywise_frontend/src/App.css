@@ -1,8 +1,11 @@
 #root {
-	max-width: 1280px;
-	margin: 0 auto;
-	padding: 2rem;
+	/* max-width: 2440px; */
+	/* margin: 0 auto; */
+	margin: 0px;
+	/* padding: 2rem; */
+	padding: 0px;
 	text-align: center;
+	width: 100%;
 	/* background-color: white; */
 }
 
@@ -42,16 +45,6 @@ to {
 	color: #888;
 }
 
-#mainbody{
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	/* justify-content: center; */
-	align-items: center;
-	height: 600px;
-	/* background-color: white; */
-
-}
 
 #input-form{
 	display: flex;
@@ -62,18 +55,28 @@ to {
 	display: flex;
 	flex-direction: column;
 	border: 2px solid #007bff;
-	padding: 20px;
-	margin: 20px auto;
-	width: 900px;
-	background-color: #f9f9f9;
+	padding: 10px;
+	margin: 10px;
+	width: 50%;
+	/* background-color: #f9f9f9; */ /* some variant of white */
+	/* background-color: black; */
 	border-radius: 8px;
 	font-family: 'Segoe UI', Arial, sans-serif;
 	box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+#two-view-components-container{
+	display: flex;
+	flex-direction: column;
+	/* padding: 10px; */
+	/* margin: 10px; */
+	width: 100%;
+
+}
+
 h2,h3,span {
 	/* color: #007bff; */
-	color: #000000;
+	/* color: #000; */
 	text-align: center;
 }
 
@@ -98,7 +101,7 @@ form {
 label {
 	margin-bottom: 8px;
 	font-weight: 600;
-	color: #333;
+	/* color: #333; */
 }
 
 input, select {
@@ -107,15 +110,19 @@ input, select {
 	border-radius: 6px;
 	font-size: 14px;
 	transition: border-color 0.3s ease;
+	background-color: transparent;
+	color: white;
 }
+
 
 input:focus, select:focus {
 	border-color: #007bff;
 	outline: none;
+	color: white;
 }
 
 button {
-	background-color: #007bff;
+	background-color: #007bff; /* some shade of bright blue */
 	color: white;
 	padding: 12px 16px;
 	font-size: 16px;
@@ -127,22 +134,87 @@ button {
 }
 
 button:hover {
-	background-color: #0056b3;
+	background-color: #0056b3; /* some shade of dark blue */
 }
 
 select {
-	background-color: white;
+	background-color: #242424;
 }
 
-
-#second-view-container {
+#container-for-views {
 	/* height: 960px; */
 	display:flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	height: 760px;
+	/* height: 760px; */
+	/* width: 100%; */
 	width: 100%;
 	/* width: 900px; */
-	background-color: white;
+	/* background-color: white; */ /*TODO: this field can change the whole page's background color if you need quick changes to experiment with dif backgrounds*/
+}
+
+#sliders-container {
+	display:flex;
+	flex-direction: column;
+	/* margin: 10px; */
+	/* padding: 10px; */
+	justify-content: center;
+	align-items: center;
+	/* height: 760px; */
+	/* width: 100%; */
+	/* margin-left: 60%; */
+	/* width: 40%; */
+	/* width: 50%; */
+	/* width: 900px; */
+	/* background-color: white; */
+}
+
+
+#first-view-internal-container {
+	/* height: 960px; */
+	display:flex;
+	flex-direction: row;
+	margin: 0px;
+	padding: 0px;
+	justify-content: center;
+	align-items: center;
+	/* height: 760px; */
+	width: 100%;
+	/* width: 50%; */
+	/* width: 900px; */
+	/* background-color: white; */
+}
+
+#first-view-container {
+	/* height: 960px; */
+	display:flex;
+	flex-direction: column;
+	margin: 10px;
+	padding: 10px;
+	justify-content: center;
+	align-items: center;
+	/* height: 760px; */
+	width: 100%;
+	/* width: 50%; */
+	/* width: 900px; */
+	/* background-color: white; */
+}
+
+#second-view-container {
+	height: 960px;
+	display:flex;
+	flex-direction: column;
+	/* margin: 10px; */
+	margin-left: 10%;
+	padding: 10px;
+	justify-content: start;
+	align-items: center;
+	/* height: 760px; */
+	/* width: 100%; */
+	width: 50%;
+	/* margin-top: -650px; */
+	/* width: 900px; */
+	/* background-color: white; */
+	color: white;
 }
