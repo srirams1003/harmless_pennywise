@@ -14,14 +14,14 @@ function App() {
 		<DataProvider>
 			<div id='mainbody'>
 				<h1>Harmless PennyWise</h1>
-				<div style={{display: 'flex', flexDirection: 'column'}}>
+				<div id="container-for-views" style={{display: 'flex', flexDirection: 'column'}}>
 					<button onClick={()=>{setShowForm(!showForm)}}>
 						{showForm ? 'Hide Input Form' : 'Show Input Form'}
 					</button>
 
 					{showForm && <InputForm />}
 
-					<div style={{display: 'flex', flexDirection: 'column'}}> {/* TODO: need to change flexdirection later to row*/}
+					<div style={{display: 'flex', flexDirection: 'row'}}> {/* TODO: need to change flexdirection later to row*/}
 						<SecondView />
 						<FirstView />
 					</div>

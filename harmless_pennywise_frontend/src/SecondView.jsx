@@ -60,7 +60,7 @@ const SecondView = () => {
 	const options = {
 		responsive: true,
 		plugins: {
-			legend: {
+			legend: { // NOTE: This field does not matter at all, as we are using a custom legend for the 2nd view, instead of what chartjs provides
 				position: 'top',
 				labels: {
 					generateLabels: (chart) => {
@@ -72,7 +72,7 @@ const SecondView = () => {
 								// Custom legend item that shows both colors
 								fillStyle: 'rgba(0, 0, 0, 0)', // Transparent
 								strokeStyle: 'rgba(0, 0, 0, 0)',
-								fontColor: '#666',
+								fontColor: '#000',
 								// Add a color box that shows both colors
 								text: [
 									'\u25A0', // Square character
@@ -116,6 +116,7 @@ const SecondView = () => {
 				min: 0,
 				ticks: {
 					autoSkip: true,
+					color: 'white',
 					maxTicksLimit: 15, // Reduce number of ticks
 					font: {
 						size: 12 // modify this if the font on the y axis labels is too big
@@ -135,6 +136,9 @@ const SecondView = () => {
 				type: 'category',
 				barPercentage: 0.6,
 				categoryPercentage: 0.8,
+				ticks: {
+					color: 'white'
+				},
 				grid: {
 					display: false,
 					// drawOnChartArea: false,
@@ -187,7 +191,7 @@ const SecondView = () => {
 				</div>
 			</div>
 
-			<div style={{ height: '550px', width: '800px', margin: '20px 0' }}>
+			<div style={{ height: '550px', width: '100%', margin: '20px 0' }}>
 				<Bar 
 					data={chartData} 
 					options={{
@@ -200,7 +204,7 @@ const SecondView = () => {
 			{/* Help text */}
 			<div style={{
 				fontSize: '0.9em',
-				color: '#666',
+				// color: '#666',
 				textAlign: 'center',
 				marginTop: '10px'
 			}}>
