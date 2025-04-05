@@ -17,12 +17,15 @@ import {
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, Tooltip); // unregistered Title and Legend because easier to customize this way
 
 const SecondView = () => {
+	// checking if input form has been filled yet STARTS HERE
 	let {dataToPlot} = useContext(DataContext);
 
 	let dataToPlotCopy = {...dataToPlot};
 
 	if (!dataToPlotCopy) return <div>No data available</div>;
 	if (!dataToPlotCopy.all_users_average || !dataToPlotCopy.current_user) return <div></div>;
+	// checking if input form has been filled yet ENDS HERE
+
 
 	const labels = Object.keys(dataToPlotCopy.all_users_average);
 	const averageData = labels.map(key => Number(dataToPlotCopy.all_users_average[key]) || 0);

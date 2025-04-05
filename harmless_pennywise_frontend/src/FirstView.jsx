@@ -798,6 +798,15 @@ row.append('text')
 // export default FinancialDashboard;
 
 const FirstView = () => {
+	// checking if input form has been filled yet STARTS HERE
+	let {dataToPlot} = useContext(DataContext);
+
+	let dataToPlotCopy = {...dataToPlot};
+
+	if (!dataToPlotCopy) return <div>No data available</div>;
+	if (!dataToPlotCopy.all_users_average || !dataToPlotCopy.current_user) return <div></div>;
+	// checking if input form has been filled yet ENDS HERE
+
 	return (
 		<div id="first-view-container">
 			{/* <ScatterPlot data={mockData} /> */}

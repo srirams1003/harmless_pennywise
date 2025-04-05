@@ -1,9 +1,9 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import './App.css';
 import { DataContext } from './context';
 
 const InputForm = () => {
-	const {setDataToPlot} = useContext(DataContext);
+	let {showForm, setShowForm, dataToPlot, setDataToPlot} = useContext(DataContext);
 
 	const [formData, setFormData] = useState({
 		age: '',
@@ -87,6 +87,7 @@ const InputForm = () => {
 			console.log("received response from backend for averages: ", result["all_users_average"]);
 			alert('Form submitted successfully!');
 			console.log("received response from backend for form submission: ", result);
+			setShowForm(false);
 		} catch (error) {
 			console.error('Error submitting form:', error);
 			alert('Submission failed. Please try again.');
