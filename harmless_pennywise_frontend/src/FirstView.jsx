@@ -799,9 +799,7 @@ row.append('text')
 
 const FirstView = () => {
 	return (
-		<div id="first-view-container" style={{ border: '2px solid green', padding: '10px', margin: '10px' }}>
-			<h2>First View Component</h2>
-			<p>This is a placeholder for the first view </p>
+		<div id="first-view-container">
 			{/* <ScatterPlot data={mockData} /> */}
 			<FinancialDashboard />
 		</div>

@@ -12,7 +12,6 @@ function App() {
 
 	return (
 		<DataProvider>
-			<div id='mainbody'>
 				<h1>Harmless PennyWise</h1>
 				<div id="container-for-views" style={{display: 'flex', flexDirection: 'column'}}>
 					<button onClick={()=>{setShowForm(!showForm)}}>
@@ -26,7 +25,6 @@ function App() {
 						<FirstView />
 					</div>
 				</div>
-			</div>
 		</DataProvider>
 	)
 }

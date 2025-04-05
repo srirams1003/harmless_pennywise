@@ -115,7 +115,7 @@ const InputForm = () => {
 	};
 
 	return (
-		<div id='input-form-container' style={{ padding: '10px', margin: '10px', width: '900px' }}>
+		<div id='input-form-container'>
 			<h2> User Data Form </h2>
 			<form id='input-form' onSubmit={handleSubmit}>
 				{Object.entries(formData).map(([key, value]) => (

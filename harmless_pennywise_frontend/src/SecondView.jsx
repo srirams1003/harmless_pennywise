@@ -34,7 +34,7 @@ const SecondView = () => {
 
 	// Determine colors based on comparison
 	const userColors = currentUserData.map((value, index) => {
-		return value > averageData[index] ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)';
+		return value > averageData[index] ? 'crimson' : 'lightgreen';
 	});
 
 	const chartData = {
@@ -43,7 +43,7 @@ const SecondView = () => {
 			{
 				label: 'All Users Average',
 				data: averageData,
-				backgroundColor: 'rgba(128, 128, 128, 0.6)',
+				backgroundColor: 'lightgray',
 				borderColor: 'rgba(128, 128, 128, 1)',
 				borderWidth: 1
 			},
@@ -112,6 +112,9 @@ const SecondView = () => {
 		},
 		scales: {
 			y: {
+				border: {
+					color: 'white',
+				},
 				type: 'logarithmic',
 				min: 0,
 				ticks: {
@@ -129,11 +132,19 @@ const SecondView = () => {
 				grid: {
 					display: false,
 					// drawOnChartArea: false,
-					// drawTicks: false,
+					// drawTicks: true,
+					// color: 'white',
+					// borderColor: "white"
 				}
 			},
 			x: {
+				border: {
+					color: 'white',
+				},
 				type: 'category',
+				gridLines: {
+					color: 'white',
+				},
 				barPercentage: 0.6,
 				categoryPercentage: 0.8,
 				ticks: {
@@ -142,15 +153,17 @@ const SecondView = () => {
 				grid: {
 					display: false,
 					// drawOnChartArea: false,
-					// drawTicks: false,
+					// drawTicks: true,
+					// color: 'white',
+					// borderColor: "white"
 				}
 			}
 		}
 	};
 
 	return (
-		<div id="second-view-container" style={{ border: '2px solid purple', padding: '10px', margin: '10px' }}>
-			<h3>Comparison of Spending Categories</h3>
+		<div id="second-view-container">
+			<h1>Comparison of Spending Categories</h1>
 
 			{/* Improved legend container */}
 			<div style={{ 
@@ -166,9 +179,10 @@ const SecondView = () => {
 					margin: '0 15px'
 				}}>
 					<div style={{
-						width: '20px',
+						width: '25px',
 						height: '20px',
-						backgroundColor: 'rgba(128, 128, 128, 0.6)',
+						// backgroundColor: 'rgba(128, 128, 128, 0.6)',
+						backgroundColor: 'lightgray',
 						marginRight: '8px',
 						border: '1px solid rgba(128, 128, 128, 1)'
 					}}></div>
@@ -181,11 +195,11 @@ const SecondView = () => {
 					margin: '0 15px'
 				}}>
 					<div style={{
-						width: '20px',
+						width: '50px',
 						height: '20px',
-						background: 'linear-gradient(to right, rgba(255, 99, 132, 0.6) 50%, rgba(75, 192, 192, 0.6) 50%)',
+						background: 'linear-gradient(to right, crimson 50%, lightgreen 50%)',
 						marginRight: '8px',
-						border: '1px solid rgba(0, 0, 0, 0.2)'
+						border: '1px solid '
 					}}></div>
 					<span>Current User (color indicates comparison)</span>
 				</div>
@@ -209,8 +223,8 @@ const SecondView = () => {
 				marginTop: '10px'
 			}}>
 				<p>
-					<span style={{ color: 'rgba(255, 99, 132, 0.8)' }}>Red</span> = Higher than average user | 
-					<span style={{ color: 'rgba(75, 192, 192, 0.8)' }}> Green</span> = Lower than average user
+					<span style={{ color: 'crimson' }}>Red</span> = Higher than average user | 
+					<span style={{ color: 'lightgreen' }}> Green</span> = Lower than average user
 				</p>
 			</div>
 		</div>
