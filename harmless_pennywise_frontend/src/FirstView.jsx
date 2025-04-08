@@ -68,6 +68,50 @@ const FinancialSlider = ({
   );
 };
 
+// New component for the separated legend
+// Simplified component for just the financial categories legend
+const ChartLegend = ({ financialCategory }) => {
+  // Define colors
+  const colors = {
+    saver: '#2ecc71',
+    balanced: '#3498db',
+    overspender: '#e74c3c'
+  };
+
+  return (
+    <div className="chart-legend" style={{ 
+      padding: '15px', 
+      backgroundColor: 'rgba(0,0,0,0.7)', 
+      borderRadius: '5px',
+      height: 'fit-content',
+      minWidth: '180px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '15px'
+    }}>
+      {/* Legend Title */}
+      <h3 style={{ color: 'white', textAlign: 'center', margin: '0 0 10px 0', fontSize: '16px' }}>Financial Categories</h3>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px'/*justifyContent: 'center', gap: '30px'*/ }}>
+        {['Saver', 'Balanced', 'Overspender'].map(category => (
+          <div key={category} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ 
+              width: '15px', 
+              height: '15px', 
+              backgroundColor: colors[category.toLowerCase()],
+              border: '1px solid white'
+            }}></div>
+            <span style={{ color: 'white', fontSize: '12px' }}>{category}</span>
+            {/* {financialCategory === category.toLowerCase() && (
+              <span style={{ color: 'yellow', marginLeft: '5px' }}>← You are here</span>
+            )} */}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Component for the sliders section
 const FinancialSlidersPanel = ({ userInputs, handleSliderChange }) => {
   return (
@@ -326,6 +370,32 @@ const getFinancialCategory = () => {
   
   // Draw the scatterplot using D3
   useEffect(() => {
+    d3.selectAll(".tooltip").remove();
+    // const tooltip = d3.select("body")
+    //   .append("div")
+    //   .attr("class", "tooltip")
+    //   .style("position", "absolute")
+    //   .style("background-color", "rgba(0, 0, 0, 0.8)")
+    //   .style("color", "white")
+    //   .style("padding", "10px")
+    //   .style("border-radius", "5px")
+    //   .style("font-size", "14px")
+    //   .style("pointer-events", "none")
+    //   .style("opacity", 0);
+
+    const tooltip = d3.select("body")
+  .append("div")
+  .attr("class", "tooltip")
+  .style("position", "absolute")
+  .style("background-color", "rgba(0, 0, 0, 0.8)")
+  .style("color", "white")
+  .style("padding", "10px")
+  .style("border-radius", "5px")
+  .style("font-size", "14px")
+  .style("pointer-events", "none")
+  .style("z-index", "99999")  // Make sure it's on top
+  .style("opacity", 1);
+
     if (!data || !data.dataset_points || !data.dataset_points.length || !svgRef.current) {
       console.log('No data available for visualization or SVG ref not ready');
       return;
@@ -350,7 +420,6 @@ const getFinancialCategory = () => {
       .append('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
     
-    // Create scales
 	
 
 	// Log actual data points for debugging
@@ -388,32 +457,6 @@ const getFinancialCategory = () => {
     const colorScale = d3.scaleOrdinal()
       .domain(['Saver', 'Balanced', 'Over-Spender', 'saver', 'balanced', 'Overspender'])
       .range(['#2ecc71', '#3498db', '#e74c3c', '#2ecc71', '#3498db', '#e74c3c']);
-    
-    // // Draw boundary areas
-    // const drawArea = (points, className) => {
-    //   if (!points || points.length < 3) return;
-      
-    //   const lineGenerator = d3.line()
-    //     .x(d => xScale(d[0]))
-    //     .y(d => yScale(d[1]));
-      
-    //   svg.append('path')
-    //     .datum(points)
-    //     .attr('class', className)
-    //     .attr('d', lineGenerator)
-    //     .attr('fill', className === 'saver-balanced' ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)')
-    //     .attr('stroke', className === 'saver-balanced' ? '#2ecc71' : '#e74c3c')
-    //     .attr('stroke-width', 1);
-    // };
-    
-    // // Enable boundary drawing
-    // if (data.boundary_coordinates?.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
-    //   drawArea(data.boundary_coordinates.saver_balanced, 'saver-balanced');
-    // }
-    
-    // if (data.boundary_coordinates?.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
-    //   drawArea(data.boundary_coordinates.balanced_overspender, 'balanced-overspender');
-    // }
 
     const drawLinearBoundaries = () => {
       // Function to extend a line to the edges of the chart
@@ -559,7 +602,7 @@ const getFinancialCategory = () => {
 		.attr('stroke-width', 2);
 
 	// Add a pulsing animation to make user point stand out
-	svg.append('circle')
+	const userPoint = svg.append('circle')
 		.attr('class', 'user-point-pulse')
 		.attr('cx', xScale(userPointX))
 		.attr('cy', yScale(userPointY))
@@ -567,6 +610,77 @@ const getFinancialCategory = () => {
 		.attr('fill', 'rgba(255, 255, 0, 0.3)')
 		.attr('stroke', 'yellow')
 		.attr('stroke-width', 1);
+  
+    // svg.select(".user-point")
+    // .style("cursor", "pointer")
+    // .on("mouseover", function(event) {
+    //   // Show tooltip on hover
+    //   tooltip.transition()
+    //     .duration(200)
+    //     .style("opacity", 0.9);
+        
+    //   // Format the tooltip content
+    //   const tooltipContent = `
+    //     <strong>Your Financial Data:</strong><br>
+    //     Monthly Income: $${monthlyIncome.toLocaleString()}<br>
+    //     Monthly Spending: $${monthlySpending.toLocaleString()}<br>
+    //     Spending Ratio: ${spendingRatio.toFixed(2)}<br>
+    //     Savings: $${savingsAmount.toLocaleString()}<br>
+    //     Savings Rate: ${savingsRate.toFixed(1)}%<br>
+    //     Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
+    //   `;
+      
+    //   tooltip.html(tooltipContent)
+    //     .style("left", (event.pageX + 15) + "px")
+    //     .style("top", (event.pageY - 28) + "px");
+    // })
+    // .on("mouseout", function() {
+    //   // Hide tooltip when not hovering
+    //   tooltip.transition()
+    //     .duration(500)
+    //     .style("opacity", 0);
+    // });
+
+    userPoint
+    .style("cursor", "pointer")
+    .on("mouseover", function(event) {
+      // Change the circle's appearance to verify event is firing
+      console.log("User point hovered");
+      d3.select(this)
+        .attr("fill", "red")
+        .attr("r", 10);
+        
+      // Show tooltip
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", 0.9);
+      
+      // Format tooltip content
+      const tooltipContent = `
+        <strong>Your Financial Data:</strong><br>
+        Monthly Income: $${monthlyIncome.toLocaleString()}<br>
+        Monthly Spending: $${monthlySpending.toLocaleString()}<br>
+        Spending Ratio: ${spendingRatio.toFixed(2)}<br>
+        Savings: $${savingsAmount.toLocaleString()}<br>
+        Savings Rate: ${savingsRate.toFixed(1)}%<br>
+        Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
+      `;
+      
+      tooltip.html(tooltipContent)
+        .style("left", (event.pageX + 15) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", function() {
+      // Restore original appearance
+      d3.select(this)
+        .attr("fill", "yellow")
+        .attr("r", 8);
+        
+      // Hide tooltip
+      tooltip.transition()
+        .duration(500)
+        .style("opacity", 0);
+    });
 
 	// Add a label to the user point
 	svg.append('text')
@@ -622,32 +736,7 @@ const getFinancialCategory = () => {
 	  .text('Financial Behavior Analysis');
     
     // Add legend
-    // const legend = svg.append('g')
-    //   .attr('transform', `translate(${innerWidth - 120}, 0)`);
-    
-    // // Use proper case for legend items to match backend categories
-    // const legendItems = ['Saver', 'Balanced', 'Over-Spender'];
-    
-    // legendItems.forEach((item, i) => {
-    //   const legendRow = legend.append('g')
-    //     .attr('transform', `translate(0, ${i * 20})`);
-      
-    //   legendRow.append('rect')
-    //     .attr('width', 10)
-    //     .attr('height', 10)
-    //     .attr('fill', colorScale(item));
-      
-    //   legendRow.append('text')
-    //     .attr('x', 20)
-    //     .attr('y', 10)
-    //     .attr('text-anchor', 'start')
-    //     .attr('fill', 'white')
-    //     .text(item);
-    // });
-    // Replace your legend code with this improved version
-// This should go in your D3 visualization useEffect, replacing the current legend code
 
-// Add a semi-transparent background to the chart to improve visibility
 svg.append('rect')
 .attr('width', innerWidth)
 .attr('height', innerHeight)
@@ -655,102 +744,6 @@ svg.append('rect')
 .attr('opacity', 0.2)
 .attr('rx', 5);
 
-// Move the legend to a better position that doesn't overlap with the chart
-// Position it at the top-right corner outside the main plot area
-const legend = svg.append('g')
-.attr('class', 'legend')
-.attr('transform', `translate(${innerWidth - 170}, 10)`);
-
-// Add legend background for better visibility
-legend.append('rect')
-.attr('x', -10)
-.attr('y', -10)
-.attr('width', 150)
-.attr('height', 95)
-.attr('fill', 'rgba(0,0,0,0.7)')
-.attr('rx', 5);
-
-// Add legend title
-legend.append('text')
-.attr('x', 65)
-.attr('y', 5)
-.attr('text-anchor', 'middle')
-.attr('font-size', '12px')
-.attr('font-weight', 'bold')
-.attr('fill', 'white')
-.text('Financial Categories');
-
-// Use proper case for legend items
-const legendItems = ['Saver', 'Balanced', 'Overspender'];
-
-legendItems.forEach((item, i) => {
-const legendRow = legend.append('g')
-  .attr('transform', `translate(0, ${i * 25 + 20})`);
-
-legendRow.append('rect')
-  .attr('width', 15)
-  .attr('height', 15)
-  .attr('fill', colorScale(item));
-
-legendRow.append('text')
-  .attr('x', 25)
-  .attr('y', 12)
-  .attr('text-anchor', 'start')
-  .attr('fill', 'white')
-  .text(item);
-});
-
-// Add a separate legend for boundaries
-const boundaryLegend = svg.append('g')
-.attr('class', 'boundary-legend')
-.attr('transform', `translate(${10}, 10)`);
-
-// Add background for boundary legend
-boundaryLegend.append('rect')
-.attr('x', -10)
-.attr('y', -10)
-.attr('width', 170)
-.attr('height', 70)
-.attr('fill', 'rgba(0,0,0,0.7)')
-.attr('rx', 5);
-
-// Add legend title
-boundaryLegend.append('text')
-.attr('x', 75)
-.attr('y', 5)
-.attr('text-anchor', 'middle')
-.attr('font-size', '12px')
-.attr('font-weight', 'bold')
-.attr('fill', 'white')
-.text('Decision Boundaries');
-
-// Add boundary line samples to legend
-const boundaryTypes = [
-{ name: 'Saver/Balanced', color: '#2ecc71' },
-{ name: 'Balanced/Overspender', color: '#e74c3c' }
-];
-
-boundaryTypes.forEach((type, i) => {
-const row = boundaryLegend.append('g')
-  .attr('transform', `translate(0, ${i * 25 + 20})`);
-
-// Add line sample with dashes
-row.append('line')
-  .attr('x1', 0)
-  .attr('y1', 7)
-  .attr('x2', 30)
-  .attr('y2', 7)
-  .attr('stroke', type.color)
-  .attr('stroke-width', 2.5)
-  .attr('stroke-dasharray', '8,4');
-
-row.append('text')
-  .attr('x', 40)
-  .attr('y', 10)
-  .attr('text-anchor', 'start')
-  .attr('fill', 'white')
-  .text(type.name);
-});
     
   }, [data, userInputs]);
   
@@ -771,7 +764,12 @@ row.append('text')
           </div>
         ) : (
           <div className="flex flex-col items-center w-full">
-            <svg ref={svgRef} className="border border-gray-300 bg-gray-800" style={{minHeight: '500px', width: '100%'}}></svg>
+            <div style={{ display: 'flex', gap: '20px', width: '100%', justifyContent: 'center' }}>
+              <svg ref={svgRef} className="border border-gray-300 bg-gray-800" style={{minHeight: '500px', width: '700px'}}></svg>
+              
+              <ChartLegend financialCategory={financialCategory} />
+            </div>
+            {/* <div id="legend-container" style="margin-left: 20px;"></div> */}
             <div className="mt-4 p-4 bg-blue-50 rounded-lg w-full">
   <h3 className="font-semibold mb-2">Key Insights:</h3>
   <ul className="list-disc pl-5">
