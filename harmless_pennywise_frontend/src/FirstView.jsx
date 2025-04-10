@@ -115,8 +115,8 @@ const ChartLegend = ({ financialCategory }) => {
 // Component for the sliders section
 const FinancialSlidersPanel = ({ userInputs, handleSliderChange }) => {
   return (
-    <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-      <h2 className="text-lg font-semibold mb-4" style={{color: 'white'}}>Adjust Your Financial Details</h2>
+    <div id='sliders-container' className="mb-8 p-0 bg-gray-100 rounded-lg">
+      <h2 className="text-lg font-semibold mb-4">Adjust Your Financial Details</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {sliderConfig.map(config => (
           <FinancialSlider
@@ -811,13 +811,7 @@ svg.append('rect')
   }, [data, userInputs]);
   
   return (
-    <div className="flex flex-col p-4 w-full max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1>
-      
-      <FinancialSlidersPanel 
-        userInputs={userInputs} 
-        handleSliderChange={handleSliderChange}
-      />
+    <div id="first-view-internal-container" className="flex flex-col p-4 w-full max-w-6xl mx-auto">
       
       <div className="bg-white p-4 rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-4" style={{color: 'white'}}>Your Financial Status</h2>
@@ -849,6 +843,12 @@ svg.append('rect')
           </div>
         )}
       </div>
+
+      <FinancialSlidersPanel 
+        userInputs={userInputs} 
+        handleSliderChange={handleSliderChange}
+      />
+      
       
       {/* Second view - Bar graph for spending categories would go here */}
       {/* <SpendingCategoriesBarChart /> */}
@@ -859,10 +859,18 @@ svg.append('rect')
 // export default FinancialDashboard;
 
 const FirstView = () => {
+	// checking if input form has been filled yet STARTS HERE
+	let {dataToPlot} = useContext(DataContext);
+
+	let dataToPlotCopy = {...dataToPlot};
+
+	if (!dataToPlotCopy) return <div>No data available</div>;
+	if (!dataToPlotCopy.all_users_average || !dataToPlotCopy.current_user) return <div></div>;
+	// checking if input form has been filled yet ENDS HERE
+
 	return (
-		<div style={{ border: '2px solid green', padding: '10px', margin: '10px' }}>
-			<h2>First View Component</h2>
-			<p>This is a placeholder for the first view </p>
+		<div id="first-view-container">
+			<h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1>
 			{/* <ScatterPlot data={mockData} /> */}
 			<FinancialDashboard />
 		</div>

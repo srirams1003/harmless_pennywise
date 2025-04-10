@@ -1,11 +1,11 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import './App.css';
 import { DataContext } from './context';
 
 const InputForm = () => {
-	const {setDataToPlot} = useContext(DataContext);
+	let { showForm, setShowForm, dataToPlot, setDataToPlot, submittedFormData, setSubmittedFormData } = useContext(DataContext);
 
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState(submittedFormData || {
 		age: '',
 		gender: '',
 		year_in_school: '',
@@ -24,6 +24,9 @@ const InputForm = () => {
 		miscellaneous: '',
 		preferred_payment_method: ''
 	});
+
+	// TODO: do we want to persist the data the user inputted into the form across reloads using localStorage?
+
 
 	const handleChange = (e) => {
 		// TODO: uncomment these lines when actually deploying/testing with users
@@ -87,6 +90,9 @@ const InputForm = () => {
 			console.log("received response from backend for averages: ", result["all_users_average"]);
 			alert('Form submitted successfully!');
 			console.log("received response from backend for form submission: ", result);
+
+			setSubmittedFormData(formData); // Save for future unhide
+			setShowForm(false); // hide form after form has been submitted
 		} catch (error) {
 			console.error('Error submitting form:', error);
 			alert('Submission failed. Please try again.');
@@ -115,7 +121,7 @@ const InputForm = () => {
 	};
 
 	return (
-		<div id='input-form-container' style={{ padding: '10px', margin: '10px', width: '900px' }}>
+		<div id='input-form-container'>
 			<h2> User Data Form </h2>
 			<form id='input-form' onSubmit={handleSubmit}>
 				{Object.entries(formData).map(([key, value]) => (
