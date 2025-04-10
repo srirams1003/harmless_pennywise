@@ -51,7 +51,7 @@ const FinancialSlider = ({
 }) => {
   return (
     <div>
-      <label className="block mb-2">
+      <label className="block mb-2" style={{ color: 'white' }}>
         {label || name}: ${formatValue(value)}
       </label>
       <input
@@ -116,7 +116,7 @@ const ChartLegend = ({ financialCategory }) => {
 const FinancialSlidersPanel = ({ userInputs, handleSliderChange }) => {
   return (
     <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-      <h2 className="text-lg font-semibold mb-4">Adjust Your Financial Details</h2>
+      <h2 className="text-lg font-semibold mb-4" style={{color: 'white'}}>Adjust Your Financial Details</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {sliderConfig.map(config => (
           <FinancialSlider
@@ -383,18 +383,19 @@ const getFinancialCategory = () => {
     //   .style("pointer-events", "none")
     //   .style("opacity", 0);
 
-    const tooltip = d3.select("body")
-  .append("div")
+    // Create tooltip
+    const tooltip = d3.select("body").append("div")
   .attr("class", "tooltip")
   .style("position", "absolute")
+  .style("padding", "10px")
   .style("background-color", "rgba(0, 0, 0, 0.8)")
   .style("color", "white")
-  .style("padding", "10px")
   .style("border-radius", "5px")
-  .style("font-size", "14px")
   .style("pointer-events", "none")
-  .style("z-index", "99999")  // Make sure it's on top
-  .style("opacity", 1);
+  .style("font-size", "14px")
+  .style("z-index", "100000")
+  .style("opacity", "0")
+  .style("visibility", "hidden");
 
     if (!data || !data.dataset_points || !data.dataset_points.length || !svgRef.current) {
       console.log('No data available for visualization or SVG ref not ready');
@@ -514,16 +515,16 @@ const getFinancialCategory = () => {
         
         // Add a label for the boundary
         const labelPoint = extendedPoints[1]; // Use the right end of the line
-        svg.append('text')
-          .attr('x', xScale(labelPoint[0]) - 60) // Offset to the left 
-          .attr('y', yScale(labelPoint[1]) - 10) // Offset above
-          .attr('text-anchor', 'end')
-          .attr('font-size', '11px')
-          .attr('fill', 'white')
-          .attr('stroke', color)
-          .attr('stroke-width', 0.5)
-          .attr('paint-order', 'stroke')
-          .text(className.replace('_', '/').toUpperCase());
+        // svg.append('text')
+        //   .attr('x', xScale(labelPoint[0]) - 60) // Offset to the left 
+        //   .attr('y', yScale(labelPoint[1]) - 10) // Offset above
+        //   .attr('text-anchor', 'end')
+        //   .attr('font-size', '11px')
+        //   .attr('fill', 'white')
+        //   .attr('stroke', color)
+        //   .attr('stroke-width', 0.5)
+        //   .attr('paint-order', 'stroke')
+        //   .text(className.replace('_', '/').toUpperCase());
       };
       
       // Draw each boundary with appropriate styling
@@ -553,20 +554,20 @@ const getFinancialCategory = () => {
       ];
       
       // Add region labels
-      regions.forEach(region => {
-        svg.append('text')
-          .attr('class', `region-label ${region.name.toLowerCase()}-region`)
-          .attr('x', xScale(region.position[0]))
-          .attr('y', yScale(region.position[1]))
-          .attr('text-anchor', 'middle')
-          .attr('fill', 'white')
-          .attr('font-weight', 'bold')
-          .attr('font-size', '16px')
-          .attr('stroke', region.color)
-          .attr('stroke-width', 0.5)
-          .attr('paint-order', 'stroke')
-          .text(region.name);
-      });
+      // regions.forEach(region => {
+      //   svg.append('text')
+      //     .attr('class', `region-label ${region.name.toLowerCase()}-region`)
+      //     .attr('x', xScale(region.position[0]))
+      //     .attr('y', yScale(region.position[1]))
+      //     .attr('text-anchor', 'middle')
+      //     .attr('fill', 'white')
+      //     .attr('font-weight', 'bold')
+      //     .attr('font-size', '16px')
+      //     .attr('stroke', region.color)
+      //     .attr('stroke-width', 0.5)
+      //     .attr('paint-order', 'stroke')
+      //     .text(region.name);
+      // });
     };
     drawLinearBoundaries();
     
@@ -599,88 +600,150 @@ const getFinancialCategory = () => {
 		.attr('r', 8)
 		.attr('fill', 'yellow')
 		.attr('stroke', '#333')
-		.attr('stroke-width', 2);
-
-	// Add a pulsing animation to make user point stand out
-	const userPoint = svg.append('circle')
-		.attr('class', 'user-point-pulse')
-		.attr('cx', xScale(userPointX))
-		.attr('cy', yScale(userPointY))
-		.attr('r', 8)
-		.attr('fill', 'rgba(255, 255, 0, 0.3)')
-		.attr('stroke', 'yellow')
-		.attr('stroke-width', 1);
-  
-    // svg.select(".user-point")
-    // .style("cursor", "pointer")
-    // .on("mouseover", function(event) {
-    //   // Show tooltip on hover
-    //   tooltip.transition()
-    //     .duration(200)
-    //     .style("opacity", 0.9);
-        
-    //   // Format the tooltip content
-    //   const tooltipContent = `
-    //     <strong>Your Financial Data:</strong><br>
-    //     Monthly Income: $${monthlyIncome.toLocaleString()}<br>
-    //     Monthly Spending: $${monthlySpending.toLocaleString()}<br>
-    //     Spending Ratio: ${spendingRatio.toFixed(2)}<br>
-    //     Savings: $${savingsAmount.toLocaleString()}<br>
-    //     Savings Rate: ${savingsRate.toFixed(1)}%<br>
-    //     Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
-    //   `;
-      
-    //   tooltip.html(tooltipContent)
-    //     .style("left", (event.pageX + 15) + "px")
-    //     .style("top", (event.pageY - 28) + "px");
-    // })
-    // .on("mouseout", function() {
-    //   // Hide tooltip when not hovering
-    //   tooltip.transition()
-    //     .duration(500)
-    //     .style("opacity", 0);
-    // });
-
-    userPoint
+		.attr('stroke-width', 2)
     .style("cursor", "pointer")
     .on("mouseover", function(event) {
-      // Change the circle's appearance to verify event is firing
-      console.log("User point hovered");
-      d3.select(this)
-        .attr("fill", "red")
-        .attr("r", 10);
-        
-      // Show tooltip
-      tooltip.transition()
-        .duration(200)
-        .style("opacity", 0.9);
-      
-      // Format tooltip content
-      const tooltipContent = `
+    // Show tooltip
+    tooltip
+      .style("opacity", 0.9)
+      .html(`
         <strong>Your Financial Data:</strong><br>
         Monthly Income: $${monthlyIncome.toLocaleString()}<br>
         Monthly Spending: $${monthlySpending.toLocaleString()}<br>
         Spending Ratio: ${spendingRatio.toFixed(2)}<br>
         Savings: $${savingsAmount.toLocaleString()}<br>
-        Savings Rate: ${savingsRate.toFixed(1)}%<br>
         Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
-      `;
-      
-      tooltip.html(tooltipContent)
-        .style("left", (event.pageX + 15) + "px")
-        .style("top", (event.pageY - 28) + "px");
-    })
-    .on("mouseout", function() {
-      // Restore original appearance
-      d3.select(this)
-        .attr("fill", "yellow")
-        .attr("r", 8);
-        
-      // Hide tooltip
-      tooltip.transition()
-        .duration(500)
-        .style("opacity", 0);
-    });
+      `)
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+  })
+  .on("mouseout", function() {
+    // Hide tooltip
+    tooltip.style("opacity", 0);
+  })
+  .on("mousemove", function(event) {
+    // Move tooltip with mouse
+    tooltip
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+  });
+
+	// Add a pulsing animation to make user point stand out
+	// const userPoint = svg.append('circle')
+	// 	.attr('class', 'user-point-pulse')
+	// 	.attr('cx', xScale(userPointX))
+	// 	.attr('cy', yScale(userPointY))
+	// 	.attr('r', 8)
+	// 	.attr('fill', 'rgba(255, 255, 0, 0.3)')
+	// 	.attr('stroke', 'yellow')
+	// 	.attr('stroke-width', 1);
+
+  //   userPoint
+  //   .style("cursor", "pointer")
+  //   .on("mouseover", function(event) {
+  //     // Don't use transitions, just set styles directly
+  //     tooltip
+  //       .style("opacity", "1")
+  //       .style("visibility", "visible")
+  //       .html(`
+  //         <strong>Your Financial Data:</strong><br>
+  //         Monthly Income: $${monthlyIncome.toLocaleString()}<br>
+  //         Monthly Spending: $${monthlySpending.toLocaleString()}<br>
+  //         Spending Ratio: ${spendingRatio.toFixed(2)}<br>
+  //         Savings: $${savingsAmount.toLocaleString()}<br>
+  //         Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
+  //       `)
+  //       .style("left", (event.pageX + 15) + "px")
+  //       .style("top", (event.pageY - 28) + "px");
+  //   })
+  //   .on("mouseout", function() {
+  //     // Hide without transitions
+  //     tooltip
+  //       .style("opacity", "0")
+  //       .style("visibility", "hidden");
+  //   });
+    // const userPointPulse = svg.append('circle')
+    // .attr('class', 'user-point-pulse')
+    // .attr('cx', xScale(userPointX))
+    // .attr('cy', yScale(userPointY))
+    // .attr('r', 8)
+    // .attr('fill', 'rgba(255, 255, 0, 0.3)')
+    // .attr('stroke', 'yellow')
+    // .attr('stroke-width', 1);
+
+    // [userPoint, userPointPulse].forEach(circle => {
+    //   circle
+    //     .style("cursor", "pointer")
+    //     .on("mouseover", function(event) {
+    //       // Change appearance on hover
+    //       d3.select(this)
+    //         .attr("r", 10);
+            
+    //       // Show tooltip with financial data
+    //       tooltip.transition()
+    //         .duration(200)
+    //         .style("opacity", 0.9);
+            
+    //       const tooltipContent = `
+    //         <strong>Your Financial Data:</strong><br>
+    //         Monthly Income: $${monthlyIncome.toLocaleString()}<br>
+    //         Monthly Spending: $${monthlySpending.toLocaleString()}<br>
+    //         Spending Ratio: ${spendingRatio.toFixed(2)}<br>
+    //         Savings: $${savingsAmount.toLocaleString()}<br>
+    //         Savings Rate: ${savingsRate.toFixed(1)}%<br>
+    //         Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
+    //       `;
+          
+    //       tooltip.html(tooltipContent)
+    //         .style("left", (event.pageX + 15) + "px")
+    //         .style("top", (event.pageY - 28) + "px");
+    //     })
+    //     .on("mouseout", function() {
+    //       // Restore original appearance
+    //       d3.select(this)
+    //         .attr("r", 8);
+            
+    //       // Hide tooltip
+    //       tooltip.transition()
+    //         .duration(500)
+    //         .style("opacity", 0);
+    //     });
+    // });
+
+    // userPoint
+    //     .style("cursor", "pointer")
+    //     .on("mouseover", function(event) {
+    //       d3.select(this)
+    //         .attr("fill", "rgba(255, 200, 0, 0.5)")
+    //         .attr("r", 10);
+            
+    //       tooltip.transition()
+    //         .duration(200)
+    //         .style("opacity", 0.9);
+          
+    //       const tooltipContent = `
+    //         <strong>Your Financial Data:</strong><br>
+    //         Monthly Income: $${monthlyIncome.toLocaleString()}<br>
+    //         Monthly Spending: $${monthlySpending.toLocaleString()}<br>
+    //         Spending Ratio: ${spendingRatio.toFixed(2)}<br>
+    //         Monthly Savings: $${savingsAmount.toLocaleString()}<br>
+    //         Savings Rate: ${savingsRate.toFixed(1)}%<br>
+    //         Category: ${financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1)}
+    //       `;
+          
+    //       tooltip.html(tooltipContent)
+    //         .style("left", (event.pageX + 15) + "px")
+    //         .style("top", (event.pageY - 28) + "px");
+    //     })
+    //     .on("mouseout", function() {
+    //       d3.select(this)
+    //         .attr("fill", "rgba(255, 255, 0, 0.3)")
+    //         .attr("r", 8);
+            
+    //       tooltip.transition()
+    //         .duration(500)
+    //         .style("opacity", 0);
+    //     });
 
 	// Add a label to the user point
 	svg.append('text')
@@ -757,7 +820,7 @@ svg.append('rect')
       />
       
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Your Financial Status</h2>
+        <h2 className="text-lg font-semibold mb-4" style={{color: 'white'}}>Your Financial Status</h2>
         {loading ? (
           <div className="flex justify-center items-center h-96">
             <p>Loading your financial analysis...</p>
@@ -771,7 +834,7 @@ svg.append('rect')
             </div>
             {/* <div id="legend-container" style="margin-left: 20px;"></div> */}
             <div className="mt-4 p-4 bg-blue-50 rounded-lg w-full">
-  <h3 className="font-semibold mb-2">Key Insights:</h3>
+  <h3 className="font-semibold mb-2" style={{color: 'white'}}>Key Insights:</h3>
   <ul className="list-disc pl-5">
     <li>Your spending pattern suggests you're in the <strong className={`${
       financialCategory === 'saver' ? 'text-green-600' : 
