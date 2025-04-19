@@ -364,10 +364,10 @@ const getFinancialCategory = () => {
 	const avgX = dataXValues.reduce((sum, val) => sum + val, 0) / dataXValues.length;
 	const avgY = dataYValues.reduce((sum, val) => sum + val, 0) / dataYValues.length;
 	
-	console.log('X values range:', Math.min(...dataXValues).toFixed(2), 'to', Math.max(...dataXValues).toFixed(2), 'avg:', avgX.toFixed(2));
-	console.log('Y values range:', Math.min(...dataYValues).toFixed(2), 'to', Math.max(...dataYValues).toFixed(2), 'avg:', avgY.toFixed(2));
-	console.log('User spending ratio:', userPointX.toFixed(2), 'User total spending:', userPointY.toFixed(2));
-	
+	// console.log('X values range:', Math.min(...dataXValues).toFixed(2), 'to', Math.max(...dataXValues).toFixed(2), 'avg:', avgX.toFixed(2));
+	// console.log('Y values range:', Math.min(...dataYValues).toFixed(2), 'to', Math.max(...dataYValues).toFixed(2), 'avg:', avgY.toFixed(2));
+	// console.log('User spending ratio:', userPointX.toFixed(2), 'User total spending:', userPointY.toFixed(2));
+	// 
 	// Create domain that includes the user point and actual data
 	const xMin = Math.min(...dataXValues, userPointX);
 	const xMax = Math.max(...dataXValues, userPointX);
