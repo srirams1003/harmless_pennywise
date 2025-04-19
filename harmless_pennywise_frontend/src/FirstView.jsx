@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { DataContext } from './context';
 import * as d3 from 'd3';
-import _ from 'lodash';
+import _, { get } from 'lodash';
 
 // --------------------------
 // MOCK DATA
@@ -27,6 +27,30 @@ const mockData = {
 // --------------------------
 // CONFIGURATION
 // --------------------------
+// Helper function to get category color
+const getCategoryColor = (category) => {
+  const categoryColors = {
+    // Original categories
+    income: '#4CAF50',       // Green
+    education: '#2196F3',    // Blue
+    living: '#FF9800',       // Orange
+    personal: '#9C27B0',     // Purple
+    
+    // Financial status categories
+    saver: '#2ecc71',        // Green
+    balanced: '#3498db',     // Blue
+    overspender: '#e74c3c',  // Red
+
+    // Positive and negative indicators
+    positive: '#2ecc71',     // Green
+    negative: '#e74c3c',     // Red
+    
+    default: '#3498db'       // Default blue
+  };
+  
+  return categoryColors[category] || categoryColors.default;
+};
+// Slider styles
 const sliderConfig = [
   { name: "monthly_income", label: "Monthly Income", min: 0, max: 20000, step: 100 },
   { name: "financial_aid", label: "Financial Aid", min: 0, max: 20000, step: 100 },
@@ -102,6 +126,7 @@ const calculateFinancialMetrics = (userInputs) => {
 // --------------------------
 
 // Reusable slider component
+
 const FinancialSlider = ({ 
   name, 
   value, 
@@ -110,315 +135,206 @@ const FinancialSlider = ({
   step, 
   onChange, 
   label = null, 
+  category = 'default',
   formatValue = value => value.toLocaleString() 
 }) => {
+  // Use the helper function instead of redefining colors
+  const sliderColor = getCategoryColor(category);
+  
   return (
-    <div>
-      <label className="block mb-2" style={{ color: 'white' }}>
-        {label || name}: ${formatValue(value)}
-      </label>
-      <input
-        type="range"
-        name={name}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={onChange}
-        className="w-full"
-      />
+    <div className={`slider-container ${category}-group`}>
+      <div className="slider-header">
+        <span className="slider-label">{label || name}</span>
+        <span className="slider-value">${formatValue(value)}</span>
+      </div>
+      <div className="slider-track-container">
+        <input
+          type="range"
+          name={name}
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={onChange}
+          className="slider-input"
+          style={{
+            '--slider-color': sliderColor,
+            '--slider-progress': `${((value - min) / (max - min)) * 100}%`
+          }}
+        />
+        <div 
+          className="slider-progress" 
+          style={{
+            width: `${((value - min) / (max - min)) * 100}%`,
+            backgroundColor: sliderColor
+          }}
+        />
+      </div>
+      
+      <div className="slider-ticks">
+        <span className="slider-tick-min">${formatValue(min)}</span>
+        <span className="slider-tick-max">${formatValue(max)}</span>
+      </div>
     </div>
   );
 };
+
+// Slider group component for organizing sliders by category
+const FinancialSliderGroup = ({ 
+  title, 
+  category, 
+  sliders, 
+  userInputs, 
+  handleSliderChange,
+  collapsible = false, 
+  initialCollapsed = false
+}) => {
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+  
+  return (
+    <div className={`slider-group ${category}-group`}>
+      <div className="slider-group-header">
+        <h3 className="slider-group-title">
+          <span 
+            className="category-indicator" 
+            style={{ backgroundColor: getCategoryColor(category) }}
+          ></span>
+          {title}
+        </h3>
+        
+        {collapsible && (
+          <button 
+            onClick={toggleCollapse} 
+            className="collapse-button"
+            aria-label={isCollapsed ? "Expand" : "Collapse"}
+          >
+            {isCollapsed ? "Show" : "Hide"}
+          </button>
+        )}
+      </div>
+      
+      {!isCollapsed && (
+        <div className="slider-group-content">
+          {sliders.map(slider => (
+            <FinancialSlider
+              key={slider.name}
+              name={slider.name}
+              label={slider.label}
+              min={slider.min}
+              max={slider.max}
+              step={slider.step}
+              value={userInputs[slider.name]}
+              onChange={handleSliderChange}
+              category={category}
+            />
+          ))}
+        </div>
+      )}
+      
+      {isCollapsed && (
+        <div className="slider-group-summary">
+          <div className="slider-group-summary-content">
+            {sliders.slice(0, 2).map(slider => (
+              <div key={slider.name} className="summary-item">
+                <span className="summary-label">{slider.label}</span>
+                <span className="summary-value">${userInputs[slider.name].toLocaleString()}</span>
+              </div>
+            ))}
+            {sliders.length > 2 && (
+              <div className="summary-more">+{sliders.length - 2} more items</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // Chart Legend Component
+
 const ChartLegend = ({ financialCategory }) => {
-  // Define colors
-  const colors = {
-    saver: '#2ecc71',
-    balanced: '#3498db',
-    overspender: '#e74c3c'
+  // State to track if legend is expanded or collapsed
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Toggle expanded/collapsed state
+  const toggleLegend = () => {
+    setIsExpanded(!isExpanded);
   };
-
+  
   return (
-    <div className="chart-legend" style={{ 
-      padding: '15px', 
-      backgroundColor: 'rgba(0,0,0,0.7)', 
-      borderRadius: '5px',
-      height: 'fit-content',
-      minWidth: '180px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px'
-    }}>
-      {/* Legend Title */}
-      <h3 style={{ color: 'white', textAlign: 'center', margin: '0 0 10px 0', fontSize: '16px' }}>Financial Categories</h3>
+    <div className={`chart-legend ${isExpanded ? 'expanded' : 'collapsed'}`}>
+      {/* Collapsed view - just shows a button */}
+      {!isExpanded && (
+        <div className="chart-legend-toggle-container">
+          <button 
+            className="chart-legend-toggle" 
+            onClick={toggleLegend}
+            aria-label="Expand legend"
+          >
+            {/* The "i" is created via CSS ::before pseudo-element */}
+          </button>
+        </div>
+      )}
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {['Saver', 'Balanced', 'Overspender'].map(category => (
-          <div key={category} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ 
-              width: '15px', 
-              height: '15px', 
-              backgroundColor: colors[category.toLowerCase()],
-              border: '1px solid white'
-            }}></div>
-            <span style={{ color: 'white', fontSize: '12px' }}>{category}</span>
+      {/* Expanded view - shows full legend */}
+      {isExpanded && (
+        <div className="chart-legend-content">
+          <div className="chart-legend-header">
+            <h3>Financial Categories</h3>
+            <button 
+              className="chart-legend-close" 
+              onClick={toggleLegend}
+              aria-label="Collapse legend"
+            >
+              ×
+            </button>
           </div>
-        ))}
-      </div>
+          
+          <div className="chart-legend-items">
+            {['Saver', 'Balanced', 'Overspender'].map(category => {
+              const categoryLower = category.toLowerCase();
+              const isActive = categoryLower === financialCategory;
+              
+              return (
+                <div key={category} className={`chart-legend-item ${isActive ? 'active' : ''}`}>
+                  <div className={`chart-legend-color ${categoryLower}`}></div>
+                  <div className="chart-legend-label">
+                    <span className={`chart-legend-name ${isActive ? 'active' : ''}`}>
+                      {category}
+                    </span>
+                    
+                    {isActive && (
+                      <span className="chart-legend-subtitle">Your Category</span>
+                    )}
+                  </div>
+                  
+                  {isActive && (
+                    <div className={`chart-legend-indicator ${categoryLower}`}></div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="chart-legend-footer">
+            <p><strong>Saver:</strong> Income exceeds spending</p>
+            <p><strong>Balanced:</strong> Income ≈ spending</p>
+            <p><strong>Overspender:</strong> Spending exceeds income</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Financial Sliders Panel
-const FinancialSlidersPanel = ({ userInputs, handleSliderChange }) => {
-  return (
-    <div className="controls-panel">
-      <h2 className="text-lg font-semibold mb-4">Adjust Your Financial Details</h2>
-      
-      {/* Income Group */}
-      <div className="slider-group income-group">
-        <h3>Income</h3>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Monthly Income</span>
-            <span className="slider-value">${userInputs.monthly_income.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="monthly_income"
-            min="0"
-            max="20000"
-            step="100"
-            value={userInputs.monthly_income}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Financial Aid</span>
-            <span className="slider-value">${userInputs.financial_aid.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="financial_aid"
-            min="0"
-            max="20000"
-            step="100"
-            value={userInputs.financial_aid}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-      </div>
-      
-      {/* Education Group */}
-      <div className="slider-group education-group">
-        <h3>Education Expenses</h3>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Tuition</span>
-            <span className="slider-value">${userInputs.tuition.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="tuition"
-            min="0"
-            max="80000"
-            step="1000"
-            value={userInputs.tuition}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Books & Supplies</span>
-            <span className="slider-value">${userInputs.books_supplies.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="books_supplies"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.books_supplies}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-      </div>
-      
-      {/* Living Expenses Group */}
-      <div className="slider-group living-group">
-        <h3>Living Expenses</h3>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Housing</span>
-            <span className="slider-value">${userInputs.housing.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="housing"
-            min="0"
-            max="20000"
-            step="100"
-            value={userInputs.housing}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Food</span>
-            <span className="slider-value">${userInputs.food.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="food"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.food}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Transportation</span>
-            <span className="slider-value">${userInputs.transportation.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="transportation"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.transportation}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-      </div>
-      
-      {/* Personal Expenses Group */}
-      <div className="slider-group personal-group">
-        <h3>Personal Expenses</h3>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Entertainment</span>
-            <span className="slider-value">${userInputs.entertainment.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="entertainment"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.entertainment}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Personal Care</span>
-            <span className="slider-value">${userInputs.personal_care.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="personal_care"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.personal_care}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Technology</span>
-            <span className="slider-value">${userInputs.technology.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="technology"
-            min="0"
-            max="20000"
-            step="100"
-            value={userInputs.technology}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Health & Wellness</span>
-            <span className="slider-value">${userInputs.health_wellness.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="health_wellness"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.health_wellness}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="slider-container">
-          <div className="slider-header">
-            <span className="slider-label">Miscellaneous</span>
-            <span className="slider-value">${userInputs.miscellaneous.toLocaleString()}</span>
-          </div>
-          <input
-            type="range"
-            name="miscellaneous"
-            min="0"
-            max="2000"
-            step="50"
-            value={userInputs.miscellaneous}
-            onChange={handleSliderChange}
-            className="w-full"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Financial Insights Panel
 const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpending, spendingRatio, savingsAmount }) => {
-  // Define colors based on financial status
-  const categoryColors = {
-    saver: '#2ecc71',     // Green
-    balanced: '#3498db',  // Blue
-    overspender: '#e74c3c' // Red
-  };
-  
-  // Determine savings status color
-  const savingsColor = savingsAmount >= 0 ? '#2ecc71' : '#e74c3c';
-  
-  // Determine spending ratio status color (higher ratio = worse)
-  const ratioColor = spendingRatio <= 0.7 ? '#2ecc71' : 
-                     spendingRatio <= 1.0 ? '#f39c12' : '#e74c3c';
   
   // Format category name with capital first letter
   const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
@@ -448,7 +364,7 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
         {/* Savings Card */}
         <div className="summary-card">
           <div className="summary-label">Monthly Savings</div>
-          <div className={`summary-value ${savingsAmount >= 0 ? 'positive' : 'negative'}`}>
+          <div className={`summary-value`} style={{ color: savingsAmount >= 0 ? getCategoryColor('positive') : getCategoryColor('negative') }}>
             {savingsAmount >= 0 ? 
               `$${savingsAmount.toLocaleString()}` : 
               `-$${Math.abs(savingsAmount).toLocaleString()}`}
@@ -458,27 +374,12 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
         {/* Category Card */}
         <div className="summary-card">
           <div className="summary-label">Financial Category</div>
-          <div className="summary-value" style={{ color: categoryColors[financialCategory] }}>
+          <div className="summary-value" style={{ color: getCategoryColor(financialCategory) }}>
             {formattedCategory}
           </div>
         </div>
       </div>
       
-      {/* Warning Card - Only show if there's a discrepancy */}
-      {categoryWarning && (
-        <div className="mt-4 bg-yellow-900 rounded-md p-4 border border-yellow-700">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 text-yellow-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p className="text-yellow-500 text-sm">
-              {financialCategory === 'saver' 
-                ? 'Your spending exceeds your income despite being categorized as a Saver.'
-                : 'You have positive savings despite being categorized as an Overspender.'}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -486,57 +387,64 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
 // --------------------------
 // DATA VISUALIZATION COMPONENT
 // --------------------------
+// Enhanced FinancialVisualization component
 const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   const svgRef = useRef(null);
+  const tooltipRef = useRef(null);
   const { userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount } = 
     calculateFinancialMetrics(userInputs);
   
-  // D3 visualization helpers
-  const createTooltip = () => {
-    // Remove any previous tooltips
-    d3.selectAll(".tooltip").remove();
+  // Create tooltip only once when component mounts
+  useEffect(() => {
+    // Create tooltip if it doesn't exist yet
+    if (!tooltipRef.current) {
+      // Remove any existing tooltips
+      d3.selectAll(".financial-tooltip").remove();
+      
+      // Create new tooltip
+      tooltipRef.current = d3.select("body").append("div")
+        .attr("class", "financial-tooltip")
+        .style("position", "absolute")
+        .style("padding", "12px")
+        .style("background-color", "rgba(0, 0, 0, 0.9)")
+        .style("color", "white")
+        .style("border-radius", "8px")
+        .style("pointer-events", "none")
+        .style("font-size", "14px")
+        .style("z-index", "10000")
+        .style("display", "none")
+        .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
+        .style("border", "1px solid rgba(255,255,255,0.1)");
+    }
     
-    // Create new tooltip
-    // return d3.select("body").append("div")
-    //   .attr("class", "tooltip")
-    //   .style("position", "absolute")
-    //   .style("padding", "10px")
-    //   .style("background-color", "rgba(0, 0, 0, 0.8)")
-    //   .style("color", "white")
-    //   .style("border-radius", "5px")
-    //   .style("pointer-events", "none")
-    //   .style("font-size", "14px")
-    //   .style("z-index", "100000")
-    //   .style("opacity", "0")
-    //   .style("visibility", "hidden");
-    
-      return d3.select("body").append("div")
-    .attr("class", "tooltip")
-    .style("position", "absolute")
-    .style("padding", "10px")
-    .style("background-color", "rgba(0, 0, 0, 0.8)")
-    .style("color", "white")
-    .style("border-radius", "5px")
-    .style("pointer-events", "none")
-    .style("font-size", "14px")
-    .style("z-index", "10000")  // High z-index to ensure visibility
-    .style("opacity", 0)        // Start hidden
-    .style("display", "none")   // Start hidden with display none
-    .style("transition", "opacity 0.2s"); 
-  };
+    // Clean up on unmount
+    return () => {
+      if (tooltipRef.current) {
+        tooltipRef.current.remove();
+        tooltipRef.current = null;
+      }
+    };
+  }, []);
   
+  // Set up chart dimensions
   const setupChart = (svgRef, width, height, margin) => {
     // Clear any existing chart
     d3.select(svgRef.current).selectAll('*').remove();
     
-    // Create SVG
-    return d3.select(svgRef.current)
+    // Add background rect for the entire SVG
+    d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
+      .style('background-color', '#1a1a1a')  // Dark background
+      .style('border-radius', '12px');       // Rounded corners
+    
+    // Create SVG
+    return d3.select(svgRef.current)
       .append('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
   };
   
+  // Create scales with better visuals
   const createScales = (dataXValues, dataYValues, userPointX, userPointY, innerWidth, innerHeight) => {
     // Calculate domain
     const xMax = Math.max(...dataXValues, userPointX);
@@ -554,83 +462,223 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     return { xScale, yScale };
   };
   
+  // Create color scale
   const createColorScale = () => {
     return d3.scaleOrdinal()
-      .domain(['Saver', 'Balanced', 'Over-Spender', 'saver', 'balanced', 'Overspender'])
-      .range(['#2ecc71', '#3498db', '#e74c3c', '#2ecc71', '#3498db', '#e74c3c']);
+      .domain(['saver', 'balanced', 'overspender'])
+      .range([
+        getCategoryColor('saver'),
+        getCategoryColor('balanced'),
+        getCategoryColor('overspender')
+      ]);
   };
   
-  const drawBoundaryLines = (svg, data, xScale, yScale) => {
-    // Function to extend a line to the edges of the chart
-    const extendLineToBounds = (points) => {
-      if (!points || points.length < 2) return points;
+  // Draw the grid lines
+  const drawGrid = (svg, xScale, yScale, innerWidth, innerHeight) => {
+    // Add subtle grid lines
+    const xGrid = d3.axisBottom(xScale)
+      .tickSize(-innerHeight)
+      .tickFormat('')
+      .ticks(10);
+    
+    const yGrid = d3.axisLeft(yScale)
+      .tickSize(-innerWidth)
+      .tickFormat('')
+      .ticks(10);
+    
+    svg.append('g')
+      .attr('class', 'x-grid')
+      .attr('transform', `translate(0, ${innerHeight})`)
+      .call(xGrid)
+      .selectAll('line')
+      .attr('stroke', 'rgba(255,255,255,0.1)');
+    
+    svg.append('g')
+      .attr('class', 'y-grid')
+      .call(yGrid)
+      .selectAll('line')
+      .attr('stroke', 'rgba(255,255,255,0.1)');
       
-      // Calculate slope and y-intercept from the two points
-      const x1 = points[0][0];
-      const y1 = points[0][1];
-      const x2 = points[1][0];
-      const y2 = points[1][1];
+    // Remove the domain lines
+    svg.selectAll('.x-grid .domain, .y-grid .domain')
+      .attr('stroke', 'none');
+  };
+  
+  // Draw enhanced boundary areas and lines
+
+  const drawBoundaryAreas = (svg, data, xScale, yScale, innerWidth, innerHeight) => {
+    if (!data.boundary_coordinates) return;
+    
+    // Function to extend the boundary lines to visualization edges
+    const extendBoundaryLine = (points, xScale, yScale, innerWidth, innerHeight) => {
+      if (!points || points.length < 2) return null;
       
-      // Calculate slope (m) and y-intercept (b) in y = mx + b
-      const slope = (y2 - y1) / (x2 - x1);
-      const yIntercept = y1 - (slope * x1);
+      // Get the first two points to calculate slope
+      const p1 = points[0];
+      const p2 = points[1];
       
-      // Extend the line to the x-axis boundaries
-      const xDomainMin = 0;
-      const xDomainMax = xScale.domain()[1];
+      // Calculate slope and y-intercept
+      const slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+      const yIntercept = p1[1] - (slope * p1[0]);
       
-      // Calculate y values at domain boundaries
-      const yAtXMin = (slope * xDomainMin) + yIntercept;
-      const yAtXMax = (slope * xDomainMax) + yIntercept;
+      // Calculate y values at x=0 and x=maxX
+      const maxX = xScale.domain()[1];
+      const y1 = yIntercept;
+      const y2 = (slope * maxX) + yIntercept;
       
-      // Return extended line points
+      // Return extended points
       return [
-        [xDomainMin, yAtXMin],
-        [xDomainMax, yAtXMax]
+        [0, y1],
+        [maxX, y2]
       ];
     };
     
-    // Function to draw a decision boundary line
-    const drawDecisionBoundary = (points, className, color) => {
-      if (!points || points.length < 2) return;
-      
-      // Extend the line to the chart boundaries
-      const extendedPoints = extendLineToBounds(points);
-      
-      // Draw the boundary line
-      const lineGenerator = d3.line()
-        .x(d => xScale(d[0]))
-        .y(d => yScale(d[1]));
-      
-      // Add the decision boundary line
-      svg.append('path')
-        .datum(extendedPoints)
-        .attr('class', `boundary-line ${className}-line`)
-        .attr('d', lineGenerator)
-        .attr('fill', 'none')
-        .attr('stroke', color)
-        .attr('stroke-width', 2.5)
-        .attr('stroke-dasharray', '8,4');
-    };
+    // Clear any existing regions first to prevent overlap issues
+    svg.selectAll('.saver-region, .balanced-region, .overspender-region').remove();
+    svg.selectAll('.saver-boundary, .balanced-boundary, .overspender-boundary').remove();
     
-    // Draw boundaries if they exist
-    if (data.boundary_coordinates?.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
-      drawDecisionBoundary(
+    // Draw saver region
+    if (data.boundary_coordinates.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
+      const extendedBoundary = extendBoundaryLine(
         data.boundary_coordinates.saver_balanced, 
-        'saver_balanced', 
-        '#2ecc71' // Green color
+        xScale, 
+        yScale, 
+        innerWidth, 
+        innerHeight
       );
+      
+      if (extendedBoundary) {
+        // FIXED: Create points for the saver region (BELOW the line to bottom of chart)
+        // This reverses the previous incorrect logic
+        const regionPoints = [
+          [0, yScale.range()[0]], // Bottom-left corner
+          [extendedBoundary[1][0], yScale.range()[0]], // Bottom-right corner
+          [extendedBoundary[1][0], extendedBoundary[1][1]],
+          [0, extendedBoundary[0][1]]
+        ];
+        
+        // Draw saver region
+        svg.append('path')
+          .datum(regionPoints)
+          .attr('class', 'saver-region')
+          .attr('d', d3.line()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]))
+          )
+          .attr('fill', getCategoryColor('saver'))
+          .attr('fill-opacity', 0.1)
+          .attr('stroke', 'none');
+        
+        // Draw saver boundary line
+        svg.append('path')
+          .datum(extendedBoundary)
+          .attr('class', 'saver-boundary')
+          .attr('d', d3.line()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]))
+          )
+          .attr('fill', 'none')
+          .attr('stroke', getCategoryColor('saver'))
+          .attr('stroke-width', 2)
+          .attr('stroke-dasharray', '5,5');
+      }
     }
     
-    if (data.boundary_coordinates?.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
-      drawDecisionBoundary(
+    // // Draw overspender region
+    if (data.boundary_coordinates.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
+      const extendedBoundary = extendBoundaryLine(
         data.boundary_coordinates.balanced_overspender, 
-        'balanced_overspender', 
-        '#e74c3c' // Red color
+        xScale, 
+        yScale, 
+        innerWidth, 
+        innerHeight
       );
+      
+      if (extendedBoundary) {
+        // FIXED: Create points for the overspender region (ABOVE the line to top of chart)
+        // This reverses the previous incorrect logic
+        const regionPoints = [
+          [0, yScale.range()[1]], // Top-left corner
+          [extendedBoundary[1][0], yScale.range()[1]], // Top-right corner
+          [extendedBoundary[1][0], extendedBoundary[1][1]],
+          [0, extendedBoundary[0][1]]
+        ];
+        
+        // Draw overspender region
+        // svg.append('path')
+        //   .datum(regionPoints)
+        //   .attr('class', 'overspender-region')
+        //   .attr('d', d3.line()
+        //     .x(d => xScale(d[0]))
+        //     .y(d => yScale(d[1]))
+        //   )
+        //   .attr('fill', categoryColors.overspender)
+        //   .attr('fill-opacity', 0.1)
+        //   .attr('stroke', 'none');
+        
+        // Draw overspender boundary line
+        svg.append('path')
+          .datum(extendedBoundary)
+          .attr('class', 'overspender-boundary')
+          .attr('d', d3.line()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]))
+          )
+          .attr('fill', 'none')
+          .attr('stroke', getCategoryColor('overspender'))
+          .attr('stroke-width', 2)
+          .attr('stroke-dasharray', '5,5');
+      }
+    }
+    
+    // Infer balanced region between the two boundaries
+    if (data.boundary_coordinates.saver_balanced && 
+        data.boundary_coordinates.balanced_overspender &&
+        data.boundary_coordinates.saver_balanced.length >= 2 &&
+        data.boundary_coordinates.balanced_overspender.length >= 2) {
+      
+      const saverBoundary = extendBoundaryLine(
+        data.boundary_coordinates.saver_balanced, 
+        xScale, 
+        yScale, 
+        innerWidth, 
+        innerHeight
+      );
+      
+      const overspenderBoundary = extendBoundaryLine(
+        data.boundary_coordinates.balanced_overspender, 
+        xScale, 
+        yScale, 
+        innerWidth, 
+        innerHeight
+      );
+      
+      if (saverBoundary && overspenderBoundary) {
+        // FIXED: Create points for the balanced region (between the two lines)
+        // Using clockwise point order for proper rendering
+        const regionPoints = [
+          [0, saverBoundary[0][1]], // Left edge at saver boundary
+          [saverBoundary[1][0], saverBoundary[1][1]], // Right edge at saver boundary
+          [overspenderBoundary[1][0], overspenderBoundary[1][1]], // Right edge at overspender boundary
+          [0, overspenderBoundary[0][1]] // Left edge at overspender boundary
+        ];
+        
+        // Draw balanced region
+        svg.append('path')
+          .datum(regionPoints)
+          .attr('class', 'balanced-region')
+          .attr('d', d3.line()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]))
+          )
+          .attr('fill', getCategoryColor('balanced'))
+          .attr('fill-opacity', 0.1)
+          .attr('stroke', 'none');
+      }
     }
   };
   
+  // Draw data points with enhanced styling
   const drawDataPoints = (svg, data, xScale, yScale, colorScale) => {
     svg.selectAll('circle.data-point')
       .data(data.dataset_points)
@@ -643,19 +691,43 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('fill', d => colorScale(d[0]))
       .attr('opacity', 0.7)
       .attr('stroke', '#fff')
-      .attr('stroke-width', 0.5);
+      .attr('stroke-width', 0.5)
+      .attr('stroke-opacity', 0.3);
   };
   
+  // Draw user point with enhanced styling and tooltip
   const drawUserPoint = (svg, userPointX, userPointY, xScale, yScale, tooltip, monthlyIncome, 
-                           monthlySpending, spendingRatio, savingsAmount, financialCategory) => {
-    // Define colors for user point based on financial category
-    const categoryColors = {
-      saver: '#2ecc71',     // Green
-      balanced: '#3498db',  // Blue
-      overspender: '#e74c3c' // Red
-    };
-    // Add user's position
+                         monthlySpending, spendingRatio, savingsAmount, financialCategory) => {
+    // Add glow effect for user point
+    const defs = svg.append('defs');
+    
+    // Add filter for glow effect
+    const filter = defs.append('filter')
+      .attr('id', 'glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%');
+    
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '3')
+      .attr('result', 'blur');
+    
+    filter.append('feComposite')
+      .attr('in', 'SourceGraphic')
+      .attr('in2', 'blur')
+      .attr('operator', 'over');
+    
+    // Add a subtle shadow for user point
     svg.append('circle')
+      .attr('cx', xScale(userPointX))
+      .attr('cy', yScale(userPointY))
+      .attr('r', 12)
+      .attr('fill', 'rgba(255, 255, 0, 0.3)')
+      .style('filter', 'url(#glow)');
+    
+    // Add user's position with pulsing animation
+    const userPoint = svg.append('circle')
       .attr('class', 'user-point')
       .attr('cx', xScale(userPointX))
       .attr('cy', yScale(userPointY))
@@ -663,32 +735,53 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('fill', 'yellow')
       .attr('stroke', '#333')
       .attr('stroke-width', 2)
-      .style("cursor", "pointer")
+      .style("cursor", "pointer");
+    
+    // Add pulsing animation
+    function pulseAnimation() {
+      userPoint.transition()
+        .duration(1000)
+        .attr('r', 10)
+        .transition()
+        .duration(1000)
+        .attr('r', 8)
+        .on('end', pulseAnimation);
+    }
+    
+    pulseAnimation();
+    
+    // Add interactive tooltip
+    userPoint
       .on("mouseover", function(event) {
         const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
+        console.log(`Financial Category: ${financialCategory}`);
+        console.log("hello");
         const savingsDisplay = savingsAmount >= 0 ? 
           `$${savingsAmount.toLocaleString()}` : 
           `-$${Math.abs(savingsAmount).toLocaleString()}`;
-        // Show tooltip
+        
+        // Show tooltip with enhanced styling
         tooltip
           .style("display", "block")
-          .style("opacity", 1)
           .html(`
-            <div style="font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #555; padding-bottom: 5px;">
-              Your Financial Data
-            </div>
-            <div style="display: grid; grid-template-columns: auto auto; gap: 5px; align-items: center;">
-              <span>Monthly Income:</span>
-              <span style="text-align: right;">$${monthlyIncome.toLocaleString()}</span>
+            <div class="tooltip-header">Your Financial Data</div>
+            <div class="tooltip-grid">
+              <span class="tooltip-label">Monthly Income:</span>
+              <span class="tooltip-value">$${monthlyIncome.toLocaleString()}</span>
               
-              <span>Monthly Spending:</span>
-              <span style="text-align: right;">$${monthlySpending.toLocaleString()}</span>
+              <span class="tooltip-label">Monthly Spending:</span>
+              <span class="tooltip-value">$${monthlySpending.toLocaleString()}</span>
               
-              <span>Monthly Savings:</span>
-              <span style="text-align: right;">${savingsDisplay}</span>
+              <span class="tooltip-label">Spending Ratio:</span>
+              <span class="tooltip-value">${spendingRatio.toFixed(2)}</span>
               
-              <span>Category:</span>
-              <span style="text-align: right; color: ${categoryColors[financialCategory] || 'white'};">
+              <span class="tooltip-label">Monthly Savings:</span>
+              <span class="tooltip-value" style="color: ${savingsAmount >= 0 ? getCategoryColor('positive') : getCategoryColor('negative')}">
+                ${savingsDisplay}
+              </span>
+              
+              <span class="tooltip-label">Category:</span>
+              <span class="tooltip-value" style="color: ${getCategoryColor(financialCategory) || 'white'};">
                 ${formattedCategory}
               </span>
             </div>
@@ -698,9 +791,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       })
       .on("mouseout", function() {
         // Hide tooltip
-        tooltip
-        .style("opacity", 0)
-        .style("display", "none");;
+        tooltip.style("display", "none");
       })
       .on("mousemove", function(event) {
         // Move tooltip with mouse
@@ -709,88 +800,84 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
           .style("top", (event.pageY - 28) + "px");
       });
 
-    // Add a label to the user point
+    // Add a label to the user point with better styling
     svg.append('text')
       .attr('x', xScale(userPointX))
-      .attr('y', yScale(userPointY) - 15)
+      .attr('y', yScale(userPointY) - 18)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
+      .attr('font-size', '14px')
+      .attr('font-weight', 'bold')
       .attr('fill', 'white')
+      .attr('stroke', 'rgba(0,0,0,0.5)')
+      .attr('stroke-width', 3)
+      .attr('paint-order', 'stroke')
       .text('You are here');
   };
   
+  // Draw axes with better styling
   const drawAxes = (svg, xScale, yScale, innerWidth, innerHeight) => {
-    const xAxis = d3.axisBottom(xScale);
-    const yAxis = d3.axisLeft(yScale);
+    // Create axes with better styling
+    const xAxis = d3.axisBottom(xScale)
+      .ticks(6)
+      .tickSize(6)
+      .tickPadding(8);
     
+    const yAxis = d3.axisLeft(yScale)
+      .ticks(6)
+      .tickSize(6)
+      .tickPadding(8);
+    
+    // Add x-axis with styling
     svg.append('g')
+      .attr('class', 'x-axis')
       .attr('transform', `translate(0, ${innerHeight})`)
       .call(xAxis)
-      .selectAll('path,line,text')
-      .attr('stroke', 'white')
-      .attr('fill', 'white');
+      .call(g => g.select('.domain').attr('stroke', 'rgba(255,255,255,0.2)'))
+      .call(g => g.selectAll('.tick line').attr('stroke', 'rgba(255,255,255,0.2)'))
+      .call(g => g.selectAll('.tick text').attr('fill', 'rgba(255,255,255,0.8)'));
 
+    // Add y-axis with styling
     svg.append('g')
+      .attr('class', 'y-axis')
       .call(yAxis)
-      .selectAll('path,line,text')
-      .attr('stroke', 'white')
-      .attr('fill', 'white');
+      .call(g => g.select('.domain').attr('stroke', 'rgba(255,255,255,0.2)'))
+      .call(g => g.selectAll('.tick line').attr('stroke', 'rgba(255,255,255,0.2)'))
+      .call(g => g.selectAll('.tick text').attr('fill', 'rgba(255,255,255,0.8)'));
     
-    // Add axis labels
+    // Add axis labels with better styling
     svg.append('text')
       .attr('x', innerWidth / 2)
       .attr('y', innerHeight + 40)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'white')
+      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('font-size', '14px')
       .text('Spending to Income Ratio');
     
     svg.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -innerHeight / 2)
-      .attr('y', -40)
+      .attr('y', -50)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'white')
+      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('font-size', '14px')
       .text('Total Spending (in $)');
   };
   
-  const addChartTitle = (svg, innerWidth) => {
-    svg.append('text')
-      .attr('x', innerWidth / 2)
-      .attr('y', -20)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '20px')
-      .attr('font-weight', 'bold')
-      .attr('fill', 'white')
-      .text('Financial Behavior Analysis');
-  };
-  
-  const addBackground = (svg, innerWidth, innerHeight) => {
-    svg.append('rect')
-      .attr('width', innerWidth)
-      .attr('height', innerHeight)
-      .attr('fill', '#1a1a1a')
-      .attr('opacity', 0.2)
-      .attr('rx', 5);
-  };
-  
-  // Create the D3 visualization
+  // Create the D3 visualization with enhanced styling
   useEffect(() => {
-    if (!data || !data.dataset_points || !data.dataset_points.length || !svgRef.current) {
-      console.log('No data available for visualization or SVG ref not ready');
+    if (!data || !data.dataset_points || !data.dataset_points.length || !svgRef.current || !tooltipRef.current) {
+      console.log('Not ready for visualization yet');
       return;
     }
     
-    // Set up dimensions
+    // Set up dimensions with better proportions
     const width = 800;
     const height = 500;
-    const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+    const margin = { top: 50, right: 50, bottom: 60, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     
-    // Create tooltip
-    const tooltip = createTooltip();
-    
-    // Setup chart
+    // Setup chart with enhanced styling
     const svg = setupChart(svgRef, width, height, margin);
     
     // Extract data values for scaling
@@ -810,23 +897,26 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     // Create color scale
     const colorScale = createColorScale();
     
-    // Draw background first (so it's in the back)
-    addBackground(svg, innerWidth, innerHeight);
+    // Draw grid first
+    drawGrid(svg, xScale, yScale, innerWidth, innerHeight);
     
-    // Draw boundary lines
-    drawBoundaryLines(svg, data, xScale, yScale);
+    // Draw boundary regions and lines
+    drawBoundaryAreas(svg, data, xScale, yScale, innerWidth, innerHeight);
     
     // Draw data points
     drawDataPoints(svg, data, xScale, yScale, colorScale);
     
-    // Draw user point
+    // Draw axes
+    drawAxes(svg, xScale, yScale, innerWidth, innerHeight);
+    
+    // Draw user point and tooltip last (so it's on top)
     drawUserPoint(
       svg, 
       userPointX, 
       userPointY, 
       xScale, 
       yScale, 
-      tooltip, 
+      tooltipRef.current,
       monthlyIncome, 
       monthlySpending, 
       spendingRatio, 
@@ -834,16 +924,22 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       financialCategory
     );
     
-    // Draw axes
-    drawAxes(svg, xScale, yScale, innerWidth, innerHeight);
-    
-    // Add chart title
-    // addChartTitle(svg, innerWidth);
-      
   }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount]);
   
   return (
-    <svg ref={svgRef} className="border border-gray-300 bg-gray-800" style={{minHeight: '500px', width: '700px'}}></svg>
+    <div className="visualization-container">
+      <svg 
+        ref={svgRef} 
+        className="financial-chart" 
+        style={{
+          minHeight: '500px', 
+          width: '100%', 
+          maxWidth: '800px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+        }}
+      ></svg>
+    </div>
   );
 };
 
@@ -967,12 +1063,19 @@ const useFinancialData = () => {
 // --------------------------
 // MAIN DASHBOARD COMPONENT
 // --------------------------
+// Main Financial Dashboard component using the enhanced slider components
 const FinancialDashboard = () => {
   // Use our custom data fetching hook
   const { data, loading } = useFinancialData();
+  
+  // State for storing user input from sliders
   const [userInputs, setUserInputs] = useState(defaultUserInputs);
+  
+  // State for controlling slider panel visibility
+  const [showSliders, setShowSliders] = useState(true);
+  
+  // Add DataContext to access submitted form data
   const { dataToPlot } = useContext(DataContext);
-  const [showControls, setShowControls] = useState(true);
   
   // Update slider values when form data becomes available in context
   useEffect(() => {
@@ -994,9 +1097,17 @@ const FinancialDashboard = () => {
     }));
   };
 
-  // Toggle controls visibility
-  const toggleControls = () => {
-    setShowControls(!showControls);
+  // Simplified reset function - directly uses dataToPlot
+  const handleReset = () => {
+    if (dataToPlot && dataToPlot.current_user) {
+      setUserInputs(prev => ({
+        ...prev,
+        ...dataToPlot.current_user
+      }));
+    } else {
+      // Fallback to defaultUserInputs if dataToPlot isn't available
+      setUserInputs(defaultUserInputs);
+    }
   };
   
   // Calculate financial metrics for the user
@@ -1009,58 +1120,138 @@ const FinancialDashboard = () => {
     financialMetrics.userPointY
   );
   
+  // Toggle sliders visibility
+  const toggleSliders = () => {
+    setShowSliders(!showSliders);
+  };
+  
+  // Organize sliders into groups
+  const sliderGroups = [
+    {
+      title: "Income",
+      category: "income",
+      collapsible: true, 
+      initialCollapsed: false, 
+      sliders: [
+        { name: "monthly_income", label: "Monthly Income", min: 0, max: 20000, step: 100 },
+        { name: "financial_aid", label: "Financial Aid", min: 0, max: 20000, step: 100 }
+      ]
+    },
+    {
+      title: "Education Expenses",
+      category: "education",
+      collapsible: true,
+      initialCollapsed: false,
+      sliders: [
+        { name: "tuition", label: "Tuition", min: 0, max: 80000, step: 1000 },
+        { name: "books_supplies", label: "Books & Supplies", min: 0, max: 2000, step: 50 }
+      ]
+    },
+    {
+      title: "Living Expenses",
+      category: "living",
+      collapsible: true,
+      initialCollapsed: true,
+      sliders: [
+        { name: "housing", label: "Housing", min: 0, max: 20000, step: 100 },
+        { name: "food", label: "Food", min: 0, max: 2000, step: 50 },
+        { name: "transportation", label: "Transportation", min: 0, max: 2000, step: 50 }
+      ]
+    },
+    {
+      title: "Personal Expenses",
+      category: "personal",
+      collapsible: true,
+      initialCollapsed: true,
+      sliders: [
+        { name: "entertainment", label: "Entertainment", min: 0, max: 2000, step: 50 },
+        { name: "personal_care", label: "Personal Care", min: 0, max: 2000, step: 50 },
+        { name: "technology", label: "Technology", min: 0, max: 20000, step: 100 },
+        { name: "health_wellness", label: "Health & Wellness", min: 0, max: 2000, step: 50 },
+        { name: "miscellaneous", label: "Miscellaneous", min: 0, max: 2000, step: 50 }
+      ]
+    }
+  ];
+  
   return (
-    <div id="first-view-internal-container">
-      {/* Toggle button */}
-      <button 
-        className="toggle-controls" 
-        onClick={toggleControls}
-        aria-label={showControls ? "Hide controls" : "Show controls"}
-      >
-        {showControls ? "←" : "→"}
-      </button>
-      
-      {/* Left panel - Visualization */}
-      <div className="visualization-panel">
-        {/* <h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1> */}
+    <div className="financial-dashboard">
+      {/* Dashboard container with two-column layout */}
+      <div className="dashboard-container">
+        {/* Toggle button for sliders panel */}
+        <button 
+          onClick={toggleSliders}
+          className="toggle-sliders-btn"
+          aria-label={showSliders ? "Hide controls" : "Show controls"}
+        >
+          {showSliders ? "→" : "←"}
+        </button>
         
-        {loading ? (
-          <div className="flex justify-center items-center h-96">
-            <p>Loading your financial analysis...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center w-full">
-            <div className="flex gap-4 w-full justify-center mb-6">
-              <FinancialVisualization 
-                data={data} 
-                userInputs={userInputs} 
-                financialCategory={financialCategory} 
+        {/* Left panel - Visualization & Summary */}
+        <div className={`visualization-panel ${!showSliders ? 'full-width' : ''}`}>
+          <h2 className="dashboard-title">Financial Spending Analysis</h2>
+          
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading your financial analysis...</p>
+            </div>
+          ) : (
+            <div>
+              {/* Chart and Legend layout */}
+              <div className="chart-container">
+                <FinancialVisualization 
+                  data={data} 
+                  userInputs={userInputs} 
+                  financialCategory={financialCategory} 
+                />
+                <ChartLegend financialCategory={financialCategory} />
+              </div>
+              
+              {/* Financial Insights Panel */}
+              <FinancialInsightsPanel 
+                financialCategory={financialCategory}
+                monthlyIncome={financialMetrics.monthlyIncome}
+                monthlySpending={financialMetrics.monthlySpending}
+                spendingRatio={financialMetrics.spendingRatio}
+                savingsAmount={financialMetrics.savingsAmount}
               />
-              <ChartLegend financialCategory={financialCategory} />
+            </div>
+          )}
+        </div>
+        
+        {/* Right panel - Sliders (conditionally rendered) */}
+        {showSliders && (
+          <div className="sliders-panel">
+            <div className="sliders-header">
+              <h2 className="sliders-title">Adjust Your Financial Details</h2>
+              <button 
+                className="reset-btn" 
+                onClick={handleReset}
+              >
+                Reset
+              </button>
             </div>
             
-            <FinancialInsightsPanel 
-              financialCategory={financialCategory}
-              monthlyIncome={financialMetrics.monthlyIncome}
-              monthlySpending={financialMetrics.monthlySpending}
-              spendingRatio={financialMetrics.spendingRatio}
-              savingsAmount={financialMetrics.savingsAmount}
-            />
+            <div className="sliders-content">
+              {sliderGroups.map(group => (
+                <FinancialSliderGroup
+                  key={group.title}
+                  title={group.title}
+                  category={group.category}
+                  sliders={group.sliders}
+                  userInputs={userInputs}
+                  handleSliderChange={handleSliderChange}
+                  collapsible={group.collapsible}
+                  initialCollapsed={group.initialCollapsed}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
-      
-      {/* Right panel - Controls (conditionally shown) */}
-      {showControls && (
-        <FinancialSlidersPanel 
-          userInputs={userInputs} 
-          handleSliderChange={handleSliderChange}
-        />
-      )}
     </div>
   );
 };
-
 // --------------------------
 // ENTRY POINT COMPONENT
 // --------------------------
