@@ -30,7 +30,10 @@ const InputForm = () => {
 
 	const handleChange = (e) => {
 		// TODO: uncomment these lines when actually deploying/testing with users
-		const { name, value } = e.target;
+		let { name, value } = e.target;
+		if (!isNaN(value)){
+			value = parseFloat(value);
+		};
 		setFormData((prev) => ({ ...prev, [name]: value }));
 
 		// // currently just pre fill form during development for convenience
