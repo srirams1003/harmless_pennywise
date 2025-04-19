@@ -30,22 +30,22 @@ const mockData = {
 // Helper function to get category color
 const getCategoryColor = (category) => {
   const categoryColors = {
-    // Original categories
-    income: '#4CAF50',       // Green
-    education: '#2196F3',    // Blue
-    living: '#FF9800',       // Orange
-    personal: '#9C27B0',     // Purple
+    // Original categories with new colors
+    income: '#4AC29A',      // Soft teal
+    education: '#5D87FF',   // Calm blue
+    living: '#FF965D',      // Muted orange
+    personal: '#B76EFF',    // Soft purple
     
     // Financial status categories
-    saver: '#2ecc71',        // Green
-    balanced: '#3498db',     // Blue
-    overspender: '#e74c3c',  // Red
-
-    // Positive and negative indicators
-    positive: '#2ecc71',     // Green
-    negative: '#e74c3c',     // Red
+    saver: '#4AC29A',       // Soft teal
+    balanced: '#5D87FF',    // Calm blue
+    overspender: '#FF5D5D', // Soft red
     
-    default: '#3498db'       // Default blue
+    // Positive and negative indicators
+    positive: '#4AC29A',    // Soft teal
+    negative: '#FF5D5D',    // Soft red
+    
+    default: '#5D87FF'      // Default blue
   };
   
   return categoryColors[category] || categoryColors.default;
@@ -186,15 +186,13 @@ const FinancialSliderGroup = ({
   sliders, 
   userInputs, 
   handleSliderChange,
-  collapsible = false, 
-  initialCollapsed = false
+  collapsible = false,
+  isOpen,
+  setOpen
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-  
+  const onToggle = () => {
+    setOpen(category);
+  }
   return (
     <div className={`slider-group ${category}-group`}>
       <div className="slider-group-header">
@@ -208,16 +206,16 @@ const FinancialSliderGroup = ({
         
         {collapsible && (
           <button 
-            onClick={toggleCollapse} 
+            onClick={onToggle} 
             className="collapse-button"
-            aria-label={isCollapsed ? "Expand" : "Collapse"}
+            // aria-label={isCollapsed ? "Expand" : "Collapse"}
           >
-            {isCollapsed ? "Show" : "Hide"}
+            {isOpen ? "Hide" : "Show"}
           </button>
         )}
       </div>
       
-      {!isCollapsed && (
+      {isOpen && (
         <div className="slider-group-content">
           {sliders.map(slider => (
             <FinancialSlider
@@ -235,7 +233,7 @@ const FinancialSliderGroup = ({
         </div>
       )}
       
-      {isCollapsed && (
+      {!isOpen && (
         <div className="slider-group-summary">
           <div className="slider-group-summary-content">
             {sliders.slice(0, 2).map(slider => (
@@ -322,9 +320,9 @@ const ChartLegend = ({ financialCategory }) => {
           </div>
           
           <div className="chart-legend-footer">
-            <p><strong>Saver:</strong> Income exceeds spending</p>
-            <p><strong>Balanced:</strong> Income ≈ spending</p>
-            <p><strong>Overspender:</strong> Spending exceeds income</p>
+            <p><strong>Saver:</strong> Saves more than peers</p>
+            <p><strong>Balanced:</strong> Typical for peer group</p>
+            <p><strong>Overspender:</strong> Spends more than peers</p>
           </div>
         </div>
       )}
@@ -504,10 +502,28 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('stroke', 'none');
   };
   
-  // Draw enhanced boundary areas and lines
-
   const drawBoundaryAreas = (svg, data, xScale, yScale, innerWidth, innerHeight) => {
     if (!data.boundary_coordinates) return;
+    
+    // Clear any existing regions first to prevent overlap issues
+    svg.selectAll('.saver-region, .balanced-region, .overspender-region').remove();
+    svg.selectAll('.saver-boundary, .balanced-boundary, .overspender-boundary').remove();
+    
+    // Add clip path to restrict regions to chart area
+    const clipId = "chart-area-clip";
+    
+    // Remove any existing clip paths
+    svg.selectAll(`#${clipId}`).remove();
+    
+    // Create a clip path for the chart area
+    svg.append("defs")
+      .append("clipPath")
+      .attr("id", clipId)
+      .append("rect")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight)
+      .attr("x", 0)
+      .attr("y", 0);
     
     // Function to extend the boundary lines to visualization edges
     const extendBoundaryLine = (points, xScale, yScale, innerWidth, innerHeight) => {
@@ -533,148 +549,92 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       ];
     };
     
-    // Clear any existing regions first to prevent overlap issues
-    svg.selectAll('.saver-region, .balanced-region, .overspender-region').remove();
-    svg.selectAll('.saver-boundary, .balanced-boundary, .overspender-boundary').remove();
+    // Get the boundary lines
+    const saverBoundary = extendBoundaryLine(
+      data.boundary_coordinates.saver_balanced, 
+      xScale, 
+      yScale, 
+      innerWidth, 
+      innerHeight
+    );
     
-    // Draw saver region
-    if (data.boundary_coordinates.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
-      const extendedBoundary = extendBoundaryLine(
-        data.boundary_coordinates.saver_balanced, 
-        xScale, 
-        yScale, 
-        innerWidth, 
-        innerHeight
-      );
-      
-      if (extendedBoundary) {
-        // FIXED: Create points for the saver region (BELOW the line to bottom of chart)
-        // This reverses the previous incorrect logic
-        const regionPoints = [
-          [0, yScale.range()[0]], // Bottom-left corner
-          [extendedBoundary[1][0], yScale.range()[0]], // Bottom-right corner
-          [extendedBoundary[1][0], extendedBoundary[1][1]],
-          [0, extendedBoundary[0][1]]
-        ];
-        
-        // Draw saver region
-        svg.append('path')
-          .datum(regionPoints)
-          .attr('class', 'saver-region')
-          .attr('d', d3.line()
-            .x(d => xScale(d[0]))
-            .y(d => yScale(d[1]))
-          )
-          .attr('fill', getCategoryColor('saver'))
-          .attr('fill-opacity', 0.1)
-          .attr('stroke', 'none');
-        
-        // Draw saver boundary line
-        svg.append('path')
-          .datum(extendedBoundary)
-          .attr('class', 'saver-boundary')
-          .attr('d', d3.line()
-            .x(d => xScale(d[0]))
-            .y(d => yScale(d[1]))
-          )
-          .attr('fill', 'none')
-          .attr('stroke', getCategoryColor('saver'))
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '5,5');
-      }
-    }
+    const overspenderBoundary = extendBoundaryLine(
+      data.boundary_coordinates.balanced_overspender, 
+      xScale, 
+      yScale, 
+      innerWidth, 
+      innerHeight
+    );
     
-    // // Draw overspender region
-    if (data.boundary_coordinates.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
-      const extendedBoundary = extendBoundaryLine(
-        data.boundary_coordinates.balanced_overspender, 
-        xScale, 
-        yScale, 
-        innerWidth, 
-        innerHeight
-      );
+    if (saverBoundary && overspenderBoundary) {
+      // Get chart dimensions in data coordinates
+      const xMin = xScale.domain()[0];
+      const xMax = xScale.domain()[1];
+      const yMin = yScale.domain()[0];
+      const yMax = yScale.domain()[1];
       
-      if (extendedBoundary) {
-        // FIXED: Create points for the overspender region (ABOVE the line to top of chart)
-        // This reverses the previous incorrect logic
-        const regionPoints = [
-          [0, yScale.range()[1]], // Top-left corner
-          [extendedBoundary[1][0], yScale.range()[1]], // Top-right corner
-          [extendedBoundary[1][0], extendedBoundary[1][1]],
-          [0, extendedBoundary[0][1]]
-        ];
-        
-        // Draw overspender region
-        // svg.append('path')
-        //   .datum(regionPoints)
-        //   .attr('class', 'overspender-region')
-        //   .attr('d', d3.line()
-        //     .x(d => xScale(d[0]))
-        //     .y(d => yScale(d[1]))
-        //   )
-        //   .attr('fill', categoryColors.overspender)
-        //   .attr('fill-opacity', 0.1)
-        //   .attr('stroke', 'none');
-        
-        // Draw overspender boundary line
-        svg.append('path')
-          .datum(extendedBoundary)
-          .attr('class', 'overspender-boundary')
-          .attr('d', d3.line()
-            .x(d => xScale(d[0]))
-            .y(d => yScale(d[1]))
-          )
-          .attr('fill', 'none')
-          .attr('stroke', getCategoryColor('overspender'))
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '5,5');
-      }
-    }
-    
-    // Infer balanced region between the two boundaries
-    if (data.boundary_coordinates.saver_balanced && 
-        data.boundary_coordinates.balanced_overspender &&
-        data.boundary_coordinates.saver_balanced.length >= 2 &&
-        data.boundary_coordinates.balanced_overspender.length >= 2) {
+      // Create a container for regions with clip path applied
+      const regionsGroup = svg.append("g")
+        .attr("clip-path", `url(#${clipId})`);
       
-      const saverBoundary = extendBoundaryLine(
-        data.boundary_coordinates.saver_balanced, 
-        xScale, 
-        yScale, 
-        innerWidth, 
-        innerHeight
-      );
+      // 1. saver region (above saver_balanced line)
+      regionsGroup.append('path')
+        .attr('d', `
+          M ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
+          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
+          L ${xScale(xMax)} ${yScale(yMin)}
+          L ${xScale(xMin)} ${yScale(yMin)}
+          Z
+        `)
+        .attr('fill', getCategoryColor('overspender'))
+        .attr('fill-opacity', 0.1);
       
-      const overspenderBoundary = extendBoundaryLine(
-        data.boundary_coordinates.balanced_overspender, 
-        xScale, 
-        yScale, 
-        innerWidth, 
-        innerHeight
-      );
+      // 2. balanced region (between the two lines)
+      regionsGroup.append('path')
+        .attr('d', `
+          M ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
+          L ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
+          Z
+        `)
+        .attr('fill', getCategoryColor('balanced'))
+        .attr('fill-opacity', 0.1);
       
-      if (saverBoundary && overspenderBoundary) {
-        // FIXED: Create points for the balanced region (between the two lines)
-        // Using clockwise point order for proper rendering
-        const regionPoints = [
-          [0, saverBoundary[0][1]], // Left edge at saver boundary
-          [saverBoundary[1][0], saverBoundary[1][1]], // Right edge at saver boundary
-          [overspenderBoundary[1][0], overspenderBoundary[1][1]], // Right edge at overspender boundary
-          [0, overspenderBoundary[0][1]] // Left edge at overspender boundary
-        ];
-        
-        // Draw balanced region
-        svg.append('path')
-          .datum(regionPoints)
-          .attr('class', 'balanced-region')
-          .attr('d', d3.line()
-            .x(d => xScale(d[0]))
-            .y(d => yScale(d[1]))
-          )
-          .attr('fill', getCategoryColor('balanced'))
-          .attr('fill-opacity', 0.1)
-          .attr('stroke', 'none');
-      }
+      // 3. overspender region (below balanced_overspender line)
+      regionsGroup.append('path')
+        .attr('d', `
+          M ${xScale(xMin)} ${yScale(yMax)}
+          L ${xScale(xMax)} ${yScale(yMax)}
+          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
+          Z
+        `)
+        .attr('fill', getCategoryColor('saver'))
+        .attr('fill-opacity', 0.1);
+      
+      // Draw boundary lines (also clipped)
+      regionsGroup.append('path')
+        .datum(saverBoundary)
+        .attr('d', d3.line()
+          .x(d => xScale(d[0]))
+          .y(d => yScale(d[1]))
+        )
+        .attr('fill', 'none')
+        .attr('stroke', getCategoryColor('saver'))
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '5,5')
+      
+      regionsGroup.append('path')
+        .datum(overspenderBoundary)
+        .attr('d', d3.line()
+          .x(d => xScale(d[0]))
+          .y(d => yScale(d[1]))
+        )
+        .attr('fill', 'none')
+        .attr('stroke', getCategoryColor('overspender'))
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '5,5')
     }
   };
   
@@ -688,7 +648,10 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('cx', d => xScale(d[1]))
       .attr('cy', d => yScale(d[2]))
       .attr('r', 4)
-      .attr('fill', d => colorScale(d[0]))
+      .attr('fill', d => {
+        const category = getFinancialCategory(data, d[1], d[2]);
+        return colorScale(category);
+      })
       .attr('opacity', 0.7)
       .attr('stroke', '#fff')
       .attr('stroke-width', 0.5)
@@ -1073,6 +1036,14 @@ const FinancialDashboard = () => {
   
   // State for controlling slider panel visibility
   const [showSliders, setShowSliders] = useState(true);
+
+  // State for accordion panels
+  const [accordionStates, setAccordionStates] = useState({
+    income: true,
+    education: false,
+    living: false,
+    personal: false
+  });
   
   // Add DataContext to access submitted form data
   const { dataToPlot } = useContext(DataContext);
@@ -1108,6 +1079,17 @@ const FinancialDashboard = () => {
       // Fallback to defaultUserInputs if dataToPlot isn't available
       setUserInputs(defaultUserInputs);
     }
+  };
+
+  // set Opened state for accordion panels
+  const handleAccordionToggle = (category) => {
+    setAccordionStates(prev => {
+      const newStates = Object.keys(prev).reduce((acc, key) => {
+        acc[key] = key === category ? !prev[key] : false;
+        return acc;
+      }, {});
+      return newStates;
+    });
   };
   
   // Calculate financial metrics for the user
@@ -1242,7 +1224,9 @@ const FinancialDashboard = () => {
                   userInputs={userInputs}
                   handleSliderChange={handleSliderChange}
                   collapsible={group.collapsible}
-                  initialCollapsed={group.initialCollapsed}
+                  // initialCollapsed={group.initialCollapsed}
+                  isOpen={accordionStates[group.category]}
+                  setOpen={handleAccordionToggle}
                 />
               ))}
             </div>
@@ -1266,7 +1250,6 @@ const FirstView = () => {
 
   return (
     <div id="first-view-container">
-      <h1 className="text-2xl font-bold mb-6">Financial Spending Analysis</h1>
       <FinancialDashboard />
     </div>
   );

@@ -321,29 +321,6 @@ button:focus-visible {
   }
 
   /* Slider Group Styles */
-.slider-group {
-	background-color: #262626;
-	border-radius: 8px;
-	padding: 20px;
-	margin-bottom: 20px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .slider-group-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 16px;
-  }
-  
-  .slider-group-title {
-	display: flex;
-	align-items: center;
-	font-size: 18px;
-	font-weight: 500;
-	color: white;
-	margin: 0;
-  }
   
   .category-indicator {
 	display: inline-block;
@@ -354,23 +331,38 @@ button:focus-visible {
   }
   
   .collapse-button {
-	background: none;
-	border: none;
-	color: #3498db;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+	color: #CCCCCC;
 	cursor: pointer;
 	font-size: 14px;
-	transition: color 0.2s ease;
+	transition: all 0.2s ease;
+	padding: 4px 10px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
   }
   
   .collapse-button:hover {
-	color: #2980b9;
+	background: rgba(255, 255, 255, 0.15);
+	color: white;
   }
   
-  .slider-group-content {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+  /* Add icons before text */
+  .collapse-button::before {
+	content: attr(data-icon);
+	font-size: 14px;
   }
+  
+  .collapse-button[aria-label="Expand"]::before {
+	content: "+";
+  }
+  
+  .collapse-button[aria-label="Collapse"]::before {
+	content: "-";
+  }
+  
   
   /* Individual Slider Styles */
   .slider-container {
@@ -531,18 +523,6 @@ button:focus-visible {
 	box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
   }
   
-  /* Slider summary for collapsed groups */
-  .slider-group-summary {
-	background-color: rgba(0, 0, 0, 0.2);
-	border-radius: 8px;
-	padding: 12px;
-  }
-  
-  .slider-group-summary-content {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 12px;
-  }
   
   .summary-item {
 	display: flex;
@@ -569,9 +549,8 @@ button:focus-visible {
 	margin-top: 8px;
   }
 /* Dashboard */
-.financial-dashboard {
+.financial-dashboard  {
 	font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-	background-color: #121212;
 	min-height: 100vh;
 	color: white;
 	padding: 20px;
@@ -635,23 +614,36 @@ button:focus-visible {
   }
   
   .reset-btn {
-	position: relative;     
-  	/* margin-left: auto; */
+	position: relative;
 	right: 0;
-	top: 25px;
-	background-color: #3498db;
+	top: 0;
+	background: linear-gradient(135deg, #5D87FF, #4A6ED3);
 	color: white;
 	border: none;
-	border-radius: 4px;
-	padding: 6px 12px;
+	border-radius: 6px;
+	padding: 8px 16px;
 	font-size: 14px;
+	font-weight: 500;
 	cursor: pointer;
-	transition: background-color 0.2s;
-	z-index: 5; 
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 10px rgba(93, 135, 255, 0.3);
+	display: flex;
+	align-items: center;
+	gap: 6px;
   }
   
   .reset-btn:hover {
-	background-color: #2980b9;
+	background: linear-gradient(135deg, #4A6ED3, #3A57A9);
+	box-shadow: 0 6px 12px rgba(93, 135, 255, 0.4);
+  }
+  
+  .reset-btn:active {
+	transform: scale(0.95);
+  }
+
+  .reset-btn::before {
+	content: "↺";
+	font-size: 16px;
   }
   
   .sliders-content {
@@ -663,27 +655,32 @@ button:focus-visible {
   /* Toggle button for sliders */
   .toggle-sliders-btn {
 	position: absolute;
-	top: 20px;
+	top: -25px;
 	right: 20px;
 	z-index: 10;
-	background: #3498db;
+	background: linear-gradient(135deg, #4AC29A, #3D9D81);
 	color: white;
 	border: none;
 	border-radius: 50%;
-	width: 40px;
-	height: 40px;
+	width: 46px;
+	height: 46px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+	box-shadow: 0 4px 15px rgba(74, 194, 154, 0.3);
 	transition: all 0.3s ease;
 	font-weight: bold;
+	font-size: 18px;
   }
   
   .toggle-sliders-btn:hover {
-	background: #2980b9;
-	transform: scale(1.05);
+	transform: scale(1.1);
+	box-shadow: 0 6px 18px rgba(74, 194, 154, 0.4);
+  }
+  
+  .toggle-sliders-btn:active {
+	transform: scale(0.95);
   }
   
   /* Loading animation */
@@ -915,23 +912,6 @@ button:focus-visible {
 	border-radius: 3px;
   }
   
-  /* Color-specific styles */
-  .income-group .slider-progress {
-	background-color: #4CAF50;
-  }
-  
-  .education-group .slider-progress {
-	background-color: #2196F3;
-  }
-  
-  .living-group .slider-progress {
-	background-color: #FF9800;
-  }
-  
-  .personal-group .slider-progress {
-	background-color: #9C27B0;
-  }
-  
   /* Financial Summary Panel */
   .financial-summary {
 	background-color: #262626;
@@ -965,29 +945,6 @@ button:focus-visible {
   .summary-card-value {
 	font-size: 20px;
 	font-weight: 600;
-  }
-  
-  /* Warning Card */
-  .warning-card {
-	margin-top: 20px;
-	background-color: rgba(253, 216, 53, 0.1);
-	padding: 16px;
-	border-radius: 8px;
-	border: 1px solid rgba(253, 216, 53, 0.3);
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
-  }
-  
-  .warning-icon {
-	color: #fdd835;
-	flex-shrink: 0;
-	margin-top: 2px;
-  }
-  
-  .warning-text {
-	color: #fdd835;
-	font-size: 14px;
   }
   
   /* Responsive adjustments */
