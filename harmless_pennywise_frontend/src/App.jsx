@@ -12,9 +12,28 @@ function AppContent() {
 		<>
 			<h1>Harmless PennyWise</h1>
 			<div id="container-for-views" style={{ display: 'flex', flexDirection: 'column' }}>
-				<button onClick={() => setShowForm(!showForm)}>
-					{showForm ? 'Hide Input Form' : 'Show Input Form'}
-				</button>
+				<div className="premium-button-wrapper">
+					<div className="premium-button-container">
+						<div className="button-ripple"></div>
+						<button 
+						onClick={()=>{setShowForm(!showForm)}}
+						className="premium-button"
+						>
+						<div className="button-glow"></div>
+						<span className="button-text">
+							{showForm ? 'Hide Form' : 'Analyze My Finances'}
+							<span className="button-icon">{showForm ? '↑' : '↓'}</span>
+						</span>
+						</button>
+						
+					</div>
+					
+					{!showForm && (
+						<p className="button-subtext">
+						Get personalized financial insights in seconds. See how your spending compares to others.
+						</p>
+					)}
+				</div>
 
 				{showForm && <InputForm />}
 
