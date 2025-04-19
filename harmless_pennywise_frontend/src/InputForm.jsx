@@ -29,33 +29,33 @@ const InputForm = () => {
 
 
 	const handleChange = (e) => {
-		// TODO: uncomment these lines when actually deploying/testing with users
-		let { name, value } = e.target;
-		if (!isNaN(value)){
-			value = parseFloat(value);
-		};
-		setFormData((prev) => ({ ...prev, [name]: value }));
+		// // TODO: uncomment these lines when actually deploying/testing with users
+		// let { name, value } = e.target;
+		// if (!isNaN(value)){
+		// 	value = parseFloat(value);
+		// };
+		// setFormData((prev) => ({ ...prev, [name]: value }));
 
-		// // currently just pre fill form during development for convenience
-		// setFormData(	{
-		// 	"age": 22,
-		// 	"gender": "Male",
-		// 	"year_in_school": "Senior",
-		// 	"major": "Computer Science",
-		// 	"monthly_income": 1100,
-		// 	"financial_aid": 600,
-		// 	"tuition": 13000,
-		// 	"housing": 700,
-		// 	"food": 300,
-		// 	"transportation": 160,
-		// 	"books_supplies": 120,
-		// 	"entertainment": 250,
-		// 	"personal_care": 130,
-		// 	"technology": 100,
-		// 	"health_wellness": 200,
-		// 	"miscellaneous": 70,
-		// 	"preferred_payment_method": "Credit/Debit Card"
-		// });
+		// currently just pre fill form during development for convenience
+		setFormData(	{
+			"age": 22,
+			"gender": "Male",
+			"year_in_school": "Senior",
+			"major": "Computer Science",
+			"monthly_income": 1100,
+			"financial_aid": 600,
+			"tuition": 13000,
+			"housing": 700,
+			"food": 300,
+			"transportation": 160,
+			"books_supplies": 120,
+			"entertainment": 250,
+			"personal_care": 130,
+			"technology": 100,
+			"health_wellness": 200,
+			"miscellaneous": 70,
+			"preferred_payment_method": "Credit/Debit Card"
+		});
 	};
 
 	// TODO: next to each field, add if it is required and also what the units are and what the time period is for collecting/reporting that data
