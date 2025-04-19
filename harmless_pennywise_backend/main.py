@@ -53,22 +53,29 @@ def add_user(name: str, age: int):
 
 @app.post("/initial_data")
 def make_initial_data():
+    import pickle
+    import numpy as np
+    import pandas as pd
+
     # Load boundary_models
     with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
         boundary_models = pickle.load(f)
-    
+
     log_reg_saver_balanced = boundary_models["saver_balanced"]
     log_reg_balanced_overspender = boundary_models["balanced_overspender"]
 
+    # Load dataset with computed spending_margin
     df = pd.read_csv("./spending_analysis_outputs/student_spending_categorized_gmm.csv")
 
-    # Generate x-values for boundary lines
-    x_vals = np.array([np.round(df["spending_ratio"].max())-1, np.round(df["spending_ratio"].max())])
+    # Generate x-values for spending_margin boundaries
+    max_margin = np.round(df["spending_margin"].max())
+    x_vals = np.array([max_margin - 1, max_margin])
 
-    # Compute decision boundaries using logistic regression
+    # Compute decision boundaries
     boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
     boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
 
+    # Convert to lists for return
     x_vals = x_vals.tolist()
     boundary_1_y = boundary_1_y.tolist()
     boundary_2_y = boundary_2_y.tolist()
@@ -78,18 +85,22 @@ def make_initial_data():
         "balanced_overspender": [[x_vals[0], boundary_2_y[0]], [x_vals[1], boundary_2_y[1]]],
     }
 
+    # Replace spending_ratio with spending_margin in dataset_points
     dataset_points = [
-        [row['spending_category'], row['spending_ratio'], row['total_spending']]
+        [row['spending_category'], row['spending_margin'], row['total_spending']]
         for _, row in df.iterrows()
     ]
 
     df_original = pd.read_csv("student_spending.csv")
-    df_original = df_original.drop(columns=["Unnamed: 0"])
-
+    if "Unnamed: 0" in df_original.columns:
+        df_original = df_original.drop(columns=["Unnamed: 0"])
     original_points = df_original.to_dict(orient='records')
 
-    return {"boundary_coordinates": boundary_coordinates, "dataset_points": dataset_points, "original_points": original_points}
-
+    return {
+        "boundary_coordinates": boundary_coordinates,
+        "dataset_points": dataset_points,
+        "original_points": original_points
+    }
 
 class StudentInput(BaseModel):
     age: int
@@ -113,69 +124,51 @@ class StudentInput(BaseModel):
 
 @app.post("/predict_category")
 # Define function to predict using logistic regression decision boundaries
-def predict_spending_category(new_data:StudentInput):
+def predict_spending_category(new_data: StudentInput):
     """
-    Predicts the spending category for a new student based on the logistic regression boundaries.
+    Predicts the spending category for a new student using logistic regression boundaries
+    trained on spending_margin and total_spending.
     """
     new_data = new_data.model_dump()
-    semester_based_cols = ["tuition", "financial_aid", "books_supplies"]
 
-    # Create new columns for semester-based values (rounded to nearest integer)
+    # Process semester-based columns
+    semester_based_cols = ["tuition", "financial_aid", "books_supplies"]
     for col in semester_based_cols:
         new_data[f"{col}_monthly"] = round(new_data[col] / 6)
 
-    # Compute total spending
+    # Calculate total spending
     spending_features = ["food", "entertainment", "miscellaneous", "housing", "transportation",
                          "books_supplies_monthly", "personal_care", "technology", "health_wellness", "tuition_monthly"]
     new_data["total_spending"] = sum(new_data[col] for col in spending_features)
 
-    # Compute spending ratio
-    new_data["spending_ratio"] = new_data["total_spending"] / (new_data["monthly_income"] + new_data["financial_aid_monthly"])
+    # Calculate spending margin
+    new_data["spending_margin"] = new_data["total_spending"] - (new_data["monthly_income"] + new_data["financial_aid_monthly"])
 
-    # Prepare the new data for prediction
+    # Prepare for prediction
     new_data_df = pd.DataFrame([{
-    "spending_ratio": new_data["spending_ratio"],
-    "total_spending": new_data["total_spending"]
+        "spending_margin": new_data["spending_margin"],
+        "total_spending": new_data["total_spending"]
     }])
 
-    # Load boundary_models
+    # Load logistic regression models
     with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
         boundary_models = pickle.load(f)
 
-    # Use logistic regression models to determine category
-    prob_saver_balanced = boundary_models["saver_balanced"].predict_proba(new_data_df)[0][1]  # Probability of being in "Balanced"
-    prob_balanced_overspender = boundary_models["balanced_overspender"].predict_proba(new_data_df)[0][1]  # Probability of being in "Over-Spender"
+    prob_sb = boundary_models["saver_balanced"].predict_proba(new_data_df)[0][1]
+    prob_bo = boundary_models["balanced_overspender"].predict_proba(new_data_df)[0][1]
 
-    # Determine category based on where the point falls relative to the decision boundaries
-    if prob_saver_balanced < 0.5:
+    if prob_sb < 0.5:
         category_label = "Saver"
-    elif prob_balanced_overspender < 0.5:
+    elif prob_bo < 0.5:
         category_label = "Balanced"
     else:
         category_label = "Over-Spender"
 
-    df = pd.read_csv("./spending_analysis_outputs/student_spending_categorized_gmm.csv")
-
-    # Update y-axis limits to include the new point
-    y_min, y_max = df["total_spending"].min(), df["total_spending"].max()
-    y_min_new = min(y_min, new_data["total_spending"])
-    y_max_new = max(y_max, new_data["total_spending"])
-    buffer_new = (y_max_new - y_min_new) * 0.05  # 5% buffer
-    
-    log_reg_saver_balanced = boundary_models["saver_balanced"]
-    log_reg_balanced_overspender = boundary_models["balanced_overspender"]
-    
-    # Generate x-values for boundary lines
-    x_vals = np.linspace(min(df["spending_ratio"].min(), new_data["spending_ratio"]), max(df["spending_ratio"].max(), new_data["spending_ratio"]), 100)
-
-    # Compute decision boundaries using logistic regression
-    boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
-    boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
-
-    # Calculate averages from your dataset (example using pandas)
+    # Load full dataset to compute feature averages
     df = pd.read_csv("student_spending.csv")
-    
-    # Calculate averages (excluding the current user)
+    if "Unnamed: 0" in df.columns:
+        df = df.drop(columns=["Unnamed: 0"])
+
     averages = {
         "monthly_income": df['monthly_income'].mean(),
         "financial_aid": df['financial_aid'].mean(),
@@ -190,7 +183,9 @@ def predict_spending_category(new_data:StudentInput):
         "health_wellness": df['health_wellness'].mean(),
         "miscellaneous": df['miscellaneous'].mean(),
     }
-    
-    return {"all_users_average": averages, "datapoint": [category_label, new_data["spending_ratio"], new_data["total_spending"]]}
 
+    return {
+        "all_users_average": averages,
+        "datapoint": [category_label, new_data["spending_margin"], new_data["total_spending"]]
+    }
 
