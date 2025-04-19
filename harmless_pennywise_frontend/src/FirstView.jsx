@@ -1068,6 +1068,7 @@ const FinancialDashboard = () => {
     }));
   };
 
+
   // Simplified reset function - directly uses dataToPlot
   const handleReset = () => {
     if (dataToPlot && dataToPlot.current_user) {
