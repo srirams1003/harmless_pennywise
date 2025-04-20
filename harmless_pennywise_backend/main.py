@@ -144,19 +144,19 @@ def calculate_financial_metrics(user_inputs: dict):
     )
 
     # Calculate financial metrics
-    spending_ratio = monthly_spending - monthly_income
+    budget_margin = monthly_income - monthly_spending;
     savings_amount = monthly_income - monthly_spending
     savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0
 
     # User point coordinates (using monthly values)
-    user_point_x = spending_ratio
+    user_point_x = budget_margin
     user_point_y = monthly_spending
 
     return {
         "adjusted_user_inputs": adjusted_user_inputs,
         "monthly_income": monthly_income,
         "monthly_spending": monthly_spending,
-        "spending_ratio": spending_ratio,
+        "budget_margin": budget_margin,
         "savings_amount": savings_amount,
         "savings_rate": savings_rate,
         "user_point_x": user_point_x,

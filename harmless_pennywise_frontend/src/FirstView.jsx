@@ -85,7 +85,23 @@ const defaultUserInputs = {
 // --------------------------
 // UTILITY FUNCTIONS
 // --------------------------
-const calculateFinancialMetrics = (userInputs) => {
+// Improved hook for fetching financial metrics from backend
+const useCalculateFinancialMetrics = (userInputs) => {
+  const [metrics, setMetrics] = useState({
+    // Default fallback values in case the API fails
+    monthly_income: 0,
+    monthly_spending: 0,
+    budget_margin: 0,
+    savings_amount: 0,
+    savings_rate: 0,
+    user_point_x: 0,
+    user_point_y: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Use local calculation as fallback
+  const calculateLocalMetrics = () => {
   // Adjust tuition, financial_aid, and books_supplies by dividing by 4 (semester to monthly)
   const adjustedUserInputs = {...userInputs};
   adjustedUserInputs.tuition = adjustedUserInputs.tuition / 4;
@@ -101,24 +117,72 @@ const calculateFinancialMetrics = (userInputs) => {
     return sum + value;
   }, 0);
   
-  const spendingRatio = monthlySpending - monthlyIncome;
+    // Changed from ratio to margin (spending minus income)
+    const budgetMargin = monthlyIncome - monthlySpending;
   const savingsAmount = monthlyIncome - monthlySpending;
   const savingsRate = (savingsAmount / monthlyIncome) * 100;
 
-  // User point coordinates (using monthly values)
-  const userPointX = spendingRatio;
-  const userPointY = monthlySpending;
-  
   return {
-    adjustedUserInputs,
-    monthlyIncome,
-    monthlySpending,
-    spendingRatio,
-    savingsAmount,
-    savingsRate,
-    userPointX,
-    userPointY
+      monthly_income: monthlyIncome,
+      monthly_spending: monthlySpending,
+      budget_margin: budgetMargin,
+      savings_amount: savingsAmount,
+      savings_rate: savingsRate,
+      user_point_x: budgetMargin,
+      user_point_y: monthlySpending
+    };
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/calculate_financial_metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userInputs)
+        });
+
+        if (!isMounted) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          setMetrics(data);
+          console.log('Received financial metrics from backend:', data);
+        } else {
+          console.warn(`API response not OK: ${response.status}. Using local calculation.`);
+          // Use local calculation as fallback
+          const localMetrics = calculateLocalMetrics();
+          setMetrics(localMetrics);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        
+        console.error('Error fetching financial metrics:', err);
+        setError(err.message);
+        
+        // Use local calculation as fallback
+        console.log('Using local calculation as fallback');
+        const localMetrics = calculateLocalMetrics();
+        setMetrics(localMetrics);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [JSON.stringify(userInputs)]); // Stringify to prevent infinite re-renders
+
+  return { metrics, loading, error };
 };
 
 // --------------------------
@@ -332,7 +396,7 @@ const ChartLegend = ({ financialCategory }) => {
 
 
 // Financial Insights Panel
-const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpending, spendingRatio, savingsAmount }) => {
+const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpending, budgetMargin, savingsAmount }) => {
   
   // Format category name with capital first letter
   const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
@@ -389,8 +453,8 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
 const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
-  const { userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount } = 
-    calculateFinancialMetrics(userInputs);
+  const { metrics: { user_point_x: userPointX, user_point_y: userPointY, monthly_income: monthlyIncome, monthly_spending: monthlySpending, budget_margin: budgetMargin, savings_amount: savingsAmount } } = 
+    useCalculateFinancialMetrics(userInputs);
   
   // Create tooltip only once when component mounts
   useEffect(() => {
@@ -445,7 +509,8 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   // Create scales with better visuals
   const createScales = (dataXValues, dataYValues, userPointX, userPointY, innerWidth, innerHeight) => {
     // Calculate domain including potential negative values for margin
-    const xMin = Math.min(0, ...dataXValues, userPointX); // Include 0 and negative values
+    // const xMin = Math.min(0, ...dataXValues, userPointX); // Include 0 and negative values
+    const xMin = Math.min(...dataXValues, userPointX);
     const xMax = Math.max(...dataXValues, userPointX);
     const yMax = Math.max(...dataYValues, userPointY);
 
@@ -457,7 +522,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const yScale = d3.scaleLinear()
       .domain([0, yMax * 1.1]) // Start y from 0, extend 10% beyond max
       .range([innerHeight, 0]);
-      
     return { xScale, yScale };
   };
   
@@ -578,40 +642,42 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       const regionsGroup = svg.append("g")
         .attr("clip-path", `url(#${clipId})`);
       
-      // 1. saver region (above saver_balanced line)
       regionsGroup.append('path')
         .attr('d', `
-          M ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
-          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
+          M ${xScale(xMin)} ${yScale(yMin)}
+          L ${xScale(xMin)} ${yScale(yMax)}
+          L ${xScale(saverBoundary[0][0])} ${yScale(saverBoundary[0][1])}
+          L ${xScale(saverBoundary[1][0])} ${yScale(saverBoundary[1][1])}
           L ${xScale(xMax)} ${yScale(yMin)}
           L ${xScale(xMin)} ${yScale(yMin)}
           Z
         `)
-        .attr('fill', getCategoryColor('overspender'))
+        .attr('fill', '#4AC29A') // Explicitly use green
         .attr('fill-opacity', 0.1);
       
-      // 2. balanced region (between the two lines)
+      // 2. Balanced region (blue, middle)
       regionsGroup.append('path')
         .attr('d', `
-          M ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
-          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
-          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
-          L ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
+          M ${xScale(saverBoundary[0][0])} ${yScale(saverBoundary[0][1])}
+          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(saverBoundary[1][0])} ${yScale(saverBoundary[1][1])}
           Z
         `)
-        .attr('fill', getCategoryColor('balanced'))
+        .attr('fill', '#5D87FF') // Explicitly use blue
         .attr('fill-opacity', 0.1);
       
-      // 3. overspender region (below balanced_overspender line)
+      // 3. Overspender region (red, rightmost)
       regionsGroup.append('path')
         .attr('d', `
-          M ${xScale(xMin)} ${yScale(yMax)}
+          M ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(xMax)} ${yScale(yMin)}
           L ${xScale(xMax)} ${yScale(yMax)}
-          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
-          L ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
           Z
         `)
-        .attr('fill', getCategoryColor('saver'))
+        .attr('fill', '#FF5D5D') // Explicitly use red
         .attr('fill-opacity', 0.1);
       
       // Draw boundary lines (also clipped)
@@ -661,7 +727,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   
   // Draw user point with enhanced styling and tooltip
   const drawUserPoint = (svg, userPointX, userPointY, xScale, yScale, tooltip, monthlyIncome, 
-                         monthlySpending, spendingRatio, savingsAmount, financialCategory) => {
+                         monthlySpending, budgetMargin, savingsAmount, financialCategory) => {
     // Add glow effect for user point
     const defs = svg.append('defs');
     
@@ -719,7 +785,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .on("mouseover", function(event) {
         const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
         console.log(`Financial Category: ${financialCategory}`);
-        console.log("hello");
         const savingsDisplay = savingsAmount >= 0 ? 
           `$${savingsAmount.toLocaleString()}` : 
           `-$${Math.abs(savingsAmount).toLocaleString()}`;
@@ -735,9 +800,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
               
               <span class="tooltip-label">Monthly Spending:</span>
               <span class="tooltip-value">$${monthlySpending.toLocaleString()}</span>
-              
-              <span class="tooltip-label">Spending Ratio:</span>
-              <span class="tooltip-value">${spendingRatio.toFixed(2)}</span>
               
               <span class="tooltip-label">Monthly Savings:</span>
               <span class="tooltip-value" style="color: ${savingsAmount >= 0 ? getCategoryColor('positive') : getCategoryColor('negative')}">
@@ -849,7 +911,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const svg = setupChart(svgRef, width, height, margin);
     
     // Extract data values for scaling
-    const dataXValues = data.dataset_points.map(d => d[1]); // spending_ratio
+    const dataXValues = data.dataset_points.map(d => d[1]); // budget_margin
     const dataYValues = data.dataset_points.map(d => d[2]); // total_spending
     
     // Create scales
@@ -1169,7 +1231,7 @@ const FinancialDashboard = () => {
                 financialCategory={financialCategory}
                 monthlyIncome={financialMetrics.monthly_income}
                 monthlySpending={financialMetrics.monthly_spending}
-                spendingRatio={financialMetrics.spending_ratio}
+                budgetMargin={financialMetrics.budget_margin}
                 savingsAmount={financialMetrics.savings_amount}
               />
             </div>
