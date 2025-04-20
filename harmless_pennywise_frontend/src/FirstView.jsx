@@ -953,11 +953,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       savingsAmount,
       financialCategory
     );
-  };
-  
-  // Create the D3 visualization with enhanced styling
-  // useEffect(() => {
-    
+  }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
     
   // }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
   
