@@ -615,8 +615,12 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     };
     
     // Get the boundary lines
+    // ** WE REVERSED THE ORDER OF THESE BOUNDARIES **
+    const overspenderCoords = data.boundary_coordinates.saver_balanced;
+    const saverCoords= data.boundary_coordinates.balanced_overspender;
+
     const saverBoundary = extendBoundaryLine(
-      data.boundary_coordinates.saver_balanced, 
+      saverCoords, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -624,7 +628,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     );
     
     const overspenderBoundary = extendBoundaryLine(
-      data.boundary_coordinates.balanced_overspender, 
+      overspenderCoords, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -655,6 +659,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
         .attr('fill', getCategoryColor('saver')) // Explicitly use green
         .attr('fill-opacity', 0.1);
       
+      
       // 2. Balanced region (blue, middle)
       regionsGroup.append('path')
         .attr('d', `
@@ -671,9 +676,9 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       regionsGroup.append('path')
         .attr('d', `
           M ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
-          L ${xScale(xMax)} ${yScale(yMin)}
-          L ${xScale(xMax)} ${yScale(yMax)}
           L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(xMin)} ${yScale(yMin)}
+          L ${xScale(xMin)} ${yScale(yMax)}
           Z
         `)
         .attr('fill', getCategoryColor('overspender'))
@@ -1257,8 +1262,8 @@ const getFinancialCategory = (data, px, py) => {
   }
   
   // Decide category
-  if (isBelowSaver) return 'saver';
-  else if (!isBelowOverspender) return 'overspender';
+  if (isBelowSaver) return 'overspender';
+  else if (!isBelowOverspender) return 'saver';
   else return 'balanced';
 };
 
