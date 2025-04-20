@@ -1859,3 +1859,8 @@ button:focus-visible {
 /* 		background-color: #f9f9f9; */
 /* 	} */
 /* } */
+
+/* setting the width for just all instances of form-input so they stay inside their container */
+.form-input { 
+	width: 90%;
+}
