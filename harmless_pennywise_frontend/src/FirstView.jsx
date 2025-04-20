@@ -652,7 +652,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
           L ${xScale(xMin)} ${yScale(yMin)}
           Z
         `)
-        .attr('fill', '#4AC29A') // Explicitly use green
+        .attr('fill', getCategoryColor('saver')) // Explicitly use green
         .attr('fill-opacity', 0.1);
       
       // 2. Balanced region (blue, middle)
@@ -664,20 +664,19 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
           L ${xScale(saverBoundary[1][0])} ${yScale(saverBoundary[1][1])}
           Z
         `)
-        .attr('fill', '#5D87FF') // Explicitly use blue
+        .attr('fill', getCategoryColor('balanced')) // Explicitly use blue
         .attr('fill-opacity', 0.1);
       
       // 3. Overspender region (red, rightmost)
       regionsGroup.append('path')
         .attr('d', `
           M ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
-          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
           L ${xScale(xMax)} ${yScale(yMin)}
           L ${xScale(xMax)} ${yScale(yMax)}
-          L ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
           Z
         `)
-        .attr('fill', '#FF5D5D') // Explicitly use red
+        .attr('fill', getCategoryColor('overspender'))
         .attr('fill-opacity', 0.1);
       
       // Draw boundary lines (also clipped)
