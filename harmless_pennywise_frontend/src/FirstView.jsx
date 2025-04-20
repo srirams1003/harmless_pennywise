@@ -408,7 +408,7 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
   
   return (
     <div className="financial-summary">
-      <h3>Financial Summary</h3>
+      <h3 className='app-font'>Financial Summary</h3>
       
       <div className="summary-grid">
         {/* Income Card */}
@@ -1460,7 +1460,7 @@ const FinancialDashboard = () => {
         
         {/* Left panel - Visualization & Summary */}
         <div className={`visualization-panel ${!showSliders ? 'full-width' : ''}`}>
-          <h2 className="dashboard-title">Financial Spending Analysis</h2>
+          <h2 className="app-font dashboard-title">Financial Spending Analysis</h2>
           
           {loading ? (
             <div className="loading-container">
@@ -1495,7 +1495,7 @@ const FinancialDashboard = () => {
         {showSliders && (
           <div className="sliders-panel">
             <div className="sliders-header">
-              <h2 className="sliders-title">Adjust Your Financial Details</h2>
+              <h2 className="app-font sliders-title">Adjust Your Financial Details</h2>
               <button 
                 className="reset-btn" 
                 onClick={handleReset}

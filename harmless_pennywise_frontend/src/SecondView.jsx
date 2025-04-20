@@ -165,8 +165,8 @@ const SecondView = () => {
 	};
 
 	return (
-		<div id="second-view-container">
-			<h1>Comparison of Spending Categories</h1>
+		<div id="second-view-container" className='visualization-panel' style={{ padding: '40px', margin: '20px' }}>
+			<h2 className="app-font">Comparison of Spending Categories</h2>
 
 			{/* Improved legend container */}
 			<div style={{ 
