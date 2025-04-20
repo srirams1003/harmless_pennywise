@@ -706,23 +706,276 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   
   // Draw data points with enhanced styling
   const drawDataPoints = (svg, data, xScale, yScale, colorScale) => {
+    // Create tooltip div if it doesn't exist
+    let tooltip = d3.select("body").select(".financial-tooltip");
+    if (tooltip.empty()) {
+      tooltip = d3.select("body").append("div")
+        .attr("class", "financial-tooltip")
+        .style("position", "absolute")
+        .style("padding", "12px")
+        .style("background-color", "rgba(0, 0, 0, 0.9)")
+        .style("color", "white")
+        .style("border-radius", "8px")
+        .style("pointer-events", "auto") // Allow interaction without scrolling
+        .style("font-size", "14px")
+        .style("z-index", "10000")
+        .style("display", "none")
+        .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
+        .style("border", "1px solid rgba(255,255,255,0.1)")
+        .style("max-width", "300px");
+    }
+  
+    // Map data points and include original point details if available
+    const enhancedDataPoints = data.dataset_points.map((d, i) => {
+      return {
+        x: d[1],                   // Budget margin
+        y: d[2],                   // Spending
+        category: d[0],            // Financial category
+        details: data.original_points && i < data.original_points.length ? 
+                 data.original_points[i] : null
+      };
+    });
+  
+    // Draw all data points
     svg.selectAll('circle.data-point')
-      .data(data.dataset_points)
+      .data(enhancedDataPoints)
       .enter()
       .append('circle')
       .attr('class', 'data-point')
-      .attr('cx', d => xScale(d[1]))
-      .attr('cy', d => yScale(d[2]))
+      .attr('cx', d => xScale(d.x))
+      .attr('cy', d => yScale(d.y))
       .attr('r', 4)
       .attr('fill', d => {
-        const category = getFinancialCategory(data, d[1], d[2]);
+        // Determine financial category from coordinates
+        const category = getFinancialCategory(data, d.x, d.y);
         return colorScale(category);
       })
       .attr('opacity', 0.7)
       .attr('stroke', '#fff')
       .attr('stroke-width', 0.5)
-      .attr('stroke-opacity', 0.3);
+      .attr('stroke-opacity', 0.3)
+      .style("cursor", "pointer")
+      .on("mouseover", function(event, d) {
+        // Show basic preview tooltip on hover
+        showPreviewTooltip(event, d, this, tooltip, colorScale, data, xScale, yScale);
+      })
+      .on("mouseout", function() {
+        // Hide tooltip on mouseout unless it's in detailed mode
+        if (!tooltip.classed("detailed-mode")) {
+          tooltip.style("display", "none");
+          
+          // Restore point appearance
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr('r', 4)
+            .attr('stroke-width', 0.5)
+            .attr('stroke-opacity', 0.3);
+        }
+      })
+      .on("mousemove", function(event) {
+        // Only move tooltip if not in detailed mode
+        if (!tooltip.classed("detailed-mode")) {
+          tooltip
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        }
+      })
+      .on("click", function(event, d) {
+        // Show detailed tooltip on click
+        showDetailedTooltip(event, d, this, tooltip, colorScale, data, xScale, yScale);
+        
+        // Mark tooltip as in detailed mode
+        tooltip.classed("detailed-mode", true);
+        
+        // Prevent event from bubbling to the SVG background
+        event.stopPropagation();
+      });
+        
+    // Add click handler to document to dismiss detailed tooltip
+    d3.select("body").on("click.dismiss-tooltip", function(event) {
+      // If clicking anywhere other than the tooltip or a data point
+      if (!tooltip.node().contains(event.target) && 
+          event.target.tagName.toLowerCase() !== 'circle') {
+        // Hide the tooltip and remove detailed mode
+        tooltip.style("display", "none")
+          .classed("detailed-mode", false);
+          
+        // Reset all data points to normal appearance
+        svg.selectAll('circle.data-point')
+          .transition()
+          .duration(200)
+          .attr('r', 4)
+          .attr('stroke-width', 0.5)
+          .attr('stroke-opacity', 0.3);
+      }
+    });
+    
+    return tooltip; // Return the tooltip for potential use by other components
   };
+  
+  // Function to show basic preview tooltip on hover
+  function showPreviewTooltip(event, d, element, tooltip, colorScale, data, xScale, yScale) {
+    // Get financial category for this point
+    const category = getFinancialCategory(data, d.x, d.y);
+    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Format financial values
+    const marginDisplay = d.x >= 0 ? `+$${d.x.toLocaleString()}` : `-$${Math.abs(d.x).toLocaleString()}`;
+    const spendingDisplay = `$${d.y.toLocaleString()}`;
+  
+    // Build basic tooltip content (preview only)
+    let tooltipContent = `
+      <div class="tooltip-header">
+        Data Preview
+        <div class="tooltip-hint">(Click for details)</div>
+      </div>
+      <div class="tooltip-grid">
+        <span class="tooltip-label">Category:</span>
+        <span class="tooltip-value" style="color: ${colorScale(category)};">
+          ${formattedCategory}
+        </span>
+        <span class="tooltip-label">Budget Margin:</span>
+        <span class="tooltip-value">${marginDisplay}</span>
+        <span class="tooltip-label">Total Spending:</span>
+        <span class="tooltip-value">${spendingDisplay}</span>
+      </div>
+    `;
+  
+    // Show tooltip with preview styling
+    tooltip
+      .classed("detailed-mode", false)
+      .style("display", "block")
+      .html(tooltipContent)
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+      
+    // Highlight the hovered point
+    d3.select(element)
+      .transition()
+      .duration(200)
+      .attr('r', 6)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 1);
+  }
+  
+  // Function to show detailed tooltip on click
+  function showDetailedTooltip(event, d, element, tooltip, colorScale, data, xScale, yScale) {
+    // Get financial category for this point
+    const category = getFinancialCategory(data, d.x, d.y);
+    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Format financial values
+    const marginDisplay = d.x >= 0 ? `+${d.x.toLocaleString()}` : `-${Math.abs(d.x).toLocaleString()}`;
+    const spendingDisplay = `${d.y.toLocaleString()}`;
+  
+    // Build detailed tooltip content
+    let tooltipContent = `
+    `;
+    
+    // Add detailed breakdown if available
+    if (d.details) {
+      // Add separator
+      tooltipContent += `
+        <div class="tooltip-header">
+          Detailed Breakdown
+        </div>
+        <div class="tooltip-grid">
+      `;
+      
+      
+      // First add priority fields if they exist
+      const detailEntries = Object.entries(d.details);
+      const ignoredFields = ['preferred_payment_method'];
+      const displayedFields = [];
+      
+      for (const entry of detailEntries) {
+        if (!ignoredFields.includes(entry[0])) {
+          console.log(entry);
+          displayedFields.push(entry);
+        }
+      }
+      
+      // Add each selected field to the tooltip
+      for (const [key, value] of displayedFields) {
+        // Format key for display (capitalize, replace underscores)
+        const formattedKey = key
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        // Determine if value should be displayed as currency or not
+        let formattedValue;
+        
+        // Non-currency fields
+        const nonCurrencyFields = ['age', 'major', 'year', 'school', 'gender', 'name', 'email', 'phone', 'address', 'city', 'state', 'zip', 'country'];
+        
+        // Check if it's a string or a non-currency field
+        if (typeof value === 'string' || nonCurrencyFields.includes(key)) {
+          formattedValue = value;
+        } 
+        // Check if it's a small number that might be an age
+        else if (key === 'age' || (key.includes('age') && value < 100)) {
+          formattedValue = value;
+        }
+        // Otherwise format as currency
+        else {
+          formattedValue = `${value.toLocaleString()}`;
+        }
+          
+        tooltipContent += `
+          <span class="tooltip-label">${formattedKey}:</span>
+          <span class="tooltip-value">${formattedValue}</span>
+        `;
+      }
+      
+      // Add a note if there are more fields not shown
+      if (Object.keys(d.details).length > displayedFields.length) {
+        tooltipContent += `
+          <span class="tooltip-note" style="grid-column: span 2; font-size: 11px; color: rgba(255,255,255,0.6); text-align: center; margin-top: 8px;">
+            Showing ${displayedFields.length} of ${Object.keys(d.details).length} available fields
+          </span>
+        `;
+      }
+      tooltipContent += '</div>';
+    }
+  
+  
+    // Show tooltip with detailed styling
+    tooltip
+      .classed("detailed-mode", true)
+      .style("display", "block")
+      .html(tooltipContent)
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+      
+    // Highlight the clicked point
+    d3.select(element)
+      .transition()
+      .duration(200)
+      .attr('r', 6)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 1);
+      
+    // Add close button event handler
+    tooltip.select(".close-tooltip-btn").on("click", function() {
+      // Hide tooltip and remove detailed mode
+      tooltip.style("display", "none")
+        .classed("detailed-mode", false);
+        
+      // Reset point appearance
+      d3.select(element)
+        .transition()
+        .duration(200)
+        .attr('r', 4)
+        .attr('stroke-width', 0.5)
+        .attr('stroke-opacity', 0.3);
+        
+      // Stop propagation to prevent triggering document click
+      d3.event ? d3.event.stopPropagation() : event.stopPropagation();
+    });
+  }
+  
   
   // Draw user point with enhanced styling and tooltip
   const drawUserPoint = (svg, userPointX, userPointY, xScale, yScale, tooltip, monthlyIncome, 
@@ -900,7 +1153,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     }
     
     // Set up dimensions with better proportions
-    const width = 800;
+    const width = 750;
     const height = 500;
     const margin = { top: 50, right: 50, bottom: 60, left: 60 };
     const innerWidth = width - margin.left - margin.right;
@@ -933,7 +1186,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     drawBoundaryAreas(svg, data, xScale, yScale, innerWidth, innerHeight);
     
     // Draw data points
-    drawDataPoints(svg, data, xScale, yScale, colorScale);
+    drawDataPoints(svg, data, xScale, yScale, colorScale, tooltipRef.current);
     
     // Draw axes
     drawAxes(svg, xScale, yScale, innerWidth, innerHeight);
