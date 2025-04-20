@@ -949,12 +949,17 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       tooltipRef.current,
       monthlyIncome, 
       monthlySpending, 
-      spendingRatio, 
+      budgetMargin, 
       savingsAmount,
       financialCategory
     );
+  };
+  
+  // Create the D3 visualization with enhanced styling
+  // useEffect(() => {
     
-  }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount]);
+    
+  // }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
   
   return (
     <div className="visualization-container">
