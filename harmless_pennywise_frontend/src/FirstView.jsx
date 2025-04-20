@@ -101,7 +101,7 @@ const calculateFinancialMetrics = (userInputs) => {
     return sum + value;
   }, 0);
   
-  const spendingRatio = monthlySpending / monthlyIncome;
+  const spendingRatio = monthlySpending - monthlyIncome;
   const savingsAmount = monthlyIncome - monthlySpending;
   const savingsRate = (savingsAmount / monthlyIncome) * 100;
 
@@ -444,17 +444,18 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   
   // Create scales with better visuals
   const createScales = (dataXValues, dataYValues, userPointX, userPointY, innerWidth, innerHeight) => {
-    // Calculate domain
+    // Calculate domain including potential negative values for margin
+    const xMin = Math.min(0, ...dataXValues, userPointX); // Include 0 and negative values
     const xMax = Math.max(...dataXValues, userPointX);
     const yMax = Math.max(...dataYValues, userPointY);
 
     // Create scales
     const xScale = d3.scaleLinear()
-      .domain([0, xMax * 1.1]) // Start from 0, extend 10% beyond max
+      .domain([xMin * 1.1, xMax * 1.1]) // Extend domain by 10% on both sides
       .range([0, innerWidth]);
     
     const yScale = d3.scaleLinear()
-      .domain([0, yMax * 1.1]) // Start from 0, extend 10% beyond max
+      .domain([0, yMax * 1.1]) // Start y from 0, extend 10% beyond max
       .range([innerHeight, 0]);
       
     return { xScale, yScale };
@@ -783,7 +784,11 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const xAxis = d3.axisBottom(xScale)
       .ticks(6)
       .tickSize(6)
-      .tickPadding(8);
+      .tickPadding(8)
+      .tickFormat(d => {
+        // Format ticks to show positive/negative sign for margin
+        return d >= 0 ? `+$${d}` : `-$${Math.abs(d)}`;
+      });
     
     const yAxis = d3.axisLeft(yScale)
       .ticks(6)
@@ -814,7 +819,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('text-anchor', 'middle')
       .attr('fill', 'rgba(255,255,255,0.8)')
       .attr('font-size', '14px')
-      .text('Spending to Income Ratio');
+      .text('Monthly Budget Margin (Income - Spending)');
     
     svg.append('text')
       .attr('transform', 'rotate(-90)')
@@ -909,68 +914,37 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
 // --------------------------
 // FINANCIAL CATEGORY CLASSIFIER
 // --------------------------
-const getFinancialCategory = (data, userPointX, userPointY) => {
-  // Default to balanced if boundaries aren't available
+const getFinancialCategory = (data, px, py) => {
   if (!data.boundary_coordinates) {
     console.log("No boundary coordinates available");
     return 'balanced';
   }
   
-  // Initialize variables to track position relative to boundaries
-  let isAboveSaverBalancedLine = false;
-  let isAboveBalancedOverspenderLine = false;
+  const pointSide = (p1, p2, px, py) => {
+    return (p2[0] - p1[0]) * (py - p1[1]) - (p2[1] - p1[1]) * (px - p1[0]);
+  };
+
+  let isBelowSaver = false;
+  let isBelowOverspender = false;
   
-  // Check position relative to saver_balanced boundary line
-  if (data.boundary_coordinates?.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
-    const points = data.boundary_coordinates.saver_balanced;
-    
-    // Calculate line equation
-    const x1 = points[0][0];
-    const y1 = points[0][1];
-    const x2 = points[1][0];
-    const y2 = points[1][1];
-    
-    const slope = (y2 - y1) / (x2 - x1);
-    const yIntercept = y1 - (slope * x1);
-    
-    // Calculate y value at user's x position
-    const boundaryYAtUserX = (slope * userPointX) + yIntercept;
-    
-    // Check if user is above this line
-    isAboveSaverBalancedLine = userPointY > boundaryYAtUserX;
+  // Check against saver_balanced line
+  if (data.boundary_coordinates.saver_balanced?.length >= 2) {
+    const [p1, p2] = data.boundary_coordinates.saver_balanced;
+    const side = pointSide(p1, p2, px, py);
+    isBelowSaver = side < 0; 
   }
   
-  // Check position relative to balanced_overspender boundary line
-  if (data.boundary_coordinates?.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
-    const points = data.boundary_coordinates.balanced_overspender;
-    
-    // Calculate line equation
-    const x1 = points[0][0];
-    const y1 = points[0][1];
-    const x2 = points[1][0];
-    const y2 = points[1][1];
-    
-    const slope = (y2 - y1) / (x2 - x1);
-    const yIntercept = y1 - (slope * x1);
-    
-    // Calculate y value at user's x position
-    const boundaryYAtUserX = (slope * userPointX) + yIntercept;
-    
-    // Check if user is above this line
-    isAboveBalancedOverspenderLine = userPointY > boundaryYAtUserX;
+  // Check against balanced_overspender line
+  if (data.boundary_coordinates.balanced_overspender?.length >= 2) {
+    const [p1, p2] = data.boundary_coordinates.balanced_overspender;
+    const side = pointSide(p1, p2, px, py);
+    isBelowOverspender = side > 0;
   }
   
-  // REVERSED LOGIC: Determine category based on position relative to both lines
-  let category;
-  if (isAboveSaverBalancedLine) {
-    category = 'saver';  // REVERSED: saver if ABOVE saver_balanced line
-  } else if (!isAboveBalancedOverspenderLine) {
-    category = 'overspender';  // REVERSED: overspender if BELOW balanced_overspender line
-  } else {
-    category = 'balanced';  // balanced if between the two lines
-  }
-  
-  return category;
+  // Decide category
+  if (isBelowSaver) return 'saver';
+  else if (!isBelowOverspender) return 'overspender';
+  else return 'balanced';
 };
 
 // --------------------------
@@ -1094,13 +1068,13 @@ const FinancialDashboard = () => {
   };
   
   // Calculate financial metrics for the user
-  const financialMetrics = calculateFinancialMetrics(userInputs);
+  const { metrics: financialMetrics, loading: metricsLoading, error: metricsError } = useCalculateFinancialMetrics(userInputs);
   
   // Determine financial category
   const financialCategory = getFinancialCategory(
     data, 
-    financialMetrics.userPointX, 
-    financialMetrics.userPointY
+    financialMetrics.user_point_x, 
+    financialMetrics.user_point_y
   );
   
   // Toggle sliders visibility
@@ -1193,10 +1167,10 @@ const FinancialDashboard = () => {
               {/* Financial Insights Panel */}
               <FinancialInsightsPanel 
                 financialCategory={financialCategory}
-                monthlyIncome={financialMetrics.monthlyIncome}
-                monthlySpending={financialMetrics.monthlySpending}
-                spendingRatio={financialMetrics.spendingRatio}
-                savingsAmount={financialMetrics.savingsAmount}
+                monthlyIncome={financialMetrics.monthly_income}
+                monthlySpending={financialMetrics.monthly_spending}
+                spendingRatio={financialMetrics.spending_ratio}
+                savingsAmount={financialMetrics.savings_amount}
               />
             </div>
           )}

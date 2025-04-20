@@ -122,6 +122,47 @@ class StudentInput(BaseModel):
     preferred_payment_method: str
 
 
+@app.post("/calculate_financial_metrics")
+def calculate_financial_metrics(user_inputs: dict):
+    """
+    Calculate financial metrics based on user inputs.
+    Adjust tuition, financial aid, and books_supplies by dividing by 4 (semester to monthly).
+    """
+    # Adjust semester-based inputs to monthly
+    adjusted_user_inputs = user_inputs.copy()
+    adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 4
+    adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 4
+    adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 4
+
+    # Calculate monthly income
+    monthly_income = user_inputs["monthly_income"] + adjusted_user_inputs["financial_aid"]
+
+    # Calculate monthly spending
+    monthly_spending = sum(
+        value for key, value in adjusted_user_inputs.items()
+        if key not in ["monthly_income", "financial_aid"]
+    )
+
+    # Calculate financial metrics
+    spending_ratio = monthly_spending - monthly_income
+    savings_amount = monthly_income - monthly_spending
+    savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0
+
+    # User point coordinates (using monthly values)
+    user_point_x = spending_ratio
+    user_point_y = monthly_spending
+
+    return {
+        "adjusted_user_inputs": adjusted_user_inputs,
+        "monthly_income": monthly_income,
+        "monthly_spending": monthly_spending,
+        "spending_ratio": spending_ratio,
+        "savings_amount": savings_amount,
+        "savings_rate": savings_rate,
+        "user_point_x": user_point_x,
+        "user_point_y": user_point_y
+    }
+
 @app.post("/predict_category")
 # Define function to predict using logistic regression decision boundaries
 def predict_spending_category(new_data: StudentInput):
