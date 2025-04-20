@@ -85,7 +85,23 @@ const defaultUserInputs = {
 // --------------------------
 // UTILITY FUNCTIONS
 // --------------------------
-const calculateFinancialMetrics = (userInputs) => {
+// Improved hook for fetching financial metrics from backend
+const useCalculateFinancialMetrics = (userInputs) => {
+  const [metrics, setMetrics] = useState({
+    // Default fallback values in case the API fails
+    monthly_income: 0,
+    monthly_spending: 0,
+    budget_margin: 0,
+    savings_amount: 0,
+    savings_rate: 0,
+    user_point_x: 0,
+    user_point_y: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Use local calculation as fallback
+  const calculateLocalMetrics = () => {
   // Adjust tuition, financial_aid, and books_supplies by dividing by 4 (semester to monthly)
   const adjustedUserInputs = {...userInputs};
   adjustedUserInputs.tuition = adjustedUserInputs.tuition / 4;
@@ -101,24 +117,72 @@ const calculateFinancialMetrics = (userInputs) => {
     return sum + value;
   }, 0);
   
-  const spendingRatio = monthlySpending / monthlyIncome;
+    // Changed from ratio to margin (spending minus income)
+    const budgetMargin = monthlyIncome - monthlySpending;
   const savingsAmount = monthlyIncome - monthlySpending;
   const savingsRate = (savingsAmount / monthlyIncome) * 100;
 
-  // User point coordinates (using monthly values)
-  const userPointX = spendingRatio;
-  const userPointY = monthlySpending;
-  
   return {
-    adjustedUserInputs,
-    monthlyIncome,
-    monthlySpending,
-    spendingRatio,
-    savingsAmount,
-    savingsRate,
-    userPointX,
-    userPointY
+      monthly_income: monthlyIncome,
+      monthly_spending: monthlySpending,
+      budget_margin: budgetMargin,
+      savings_amount: savingsAmount,
+      savings_rate: savingsRate,
+      user_point_x: budgetMargin,
+      user_point_y: monthlySpending
+    };
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/calculate_financial_metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userInputs)
+        });
+
+        if (!isMounted) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          setMetrics(data);
+          console.log('Received financial metrics from backend:', data);
+        } else {
+          console.warn(`API response not OK: ${response.status}. Using local calculation.`);
+          // Use local calculation as fallback
+          const localMetrics = calculateLocalMetrics();
+          setMetrics(localMetrics);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        
+        console.error('Error fetching financial metrics:', err);
+        setError(err.message);
+        
+        // Use local calculation as fallback
+        console.log('Using local calculation as fallback');
+        const localMetrics = calculateLocalMetrics();
+        setMetrics(localMetrics);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [JSON.stringify(userInputs)]); // Stringify to prevent infinite re-renders
+
+  return { metrics, loading, error };
 };
 
 // --------------------------
@@ -332,7 +396,7 @@ const ChartLegend = ({ financialCategory }) => {
 
 
 // Financial Insights Panel
-const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpending, spendingRatio, savingsAmount }) => {
+const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpending, budgetMargin, savingsAmount }) => {
   
   // Format category name with capital first letter
   const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
@@ -344,7 +408,7 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
   
   return (
     <div className="financial-summary">
-      <h3>Financial Summary</h3>
+      <h3 className='app-font'>Financial Summary</h3>
       
       <div className="summary-grid">
         {/* Income Card */}
@@ -389,8 +453,8 @@ const FinancialInsightsPanel = ({ financialCategory, monthlyIncome, monthlySpend
 const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
-  const { userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount } = 
-    calculateFinancialMetrics(userInputs);
+  const { metrics: { user_point_x: userPointX, user_point_y: userPointY, monthly_income: monthlyIncome, monthly_spending: monthlySpending, budget_margin: budgetMargin, savings_amount: savingsAmount } } = 
+    useCalculateFinancialMetrics(userInputs);
   
   // Create tooltip only once when component mounts
   useEffect(() => {
@@ -444,19 +508,20 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   
   // Create scales with better visuals
   const createScales = (dataXValues, dataYValues, userPointX, userPointY, innerWidth, innerHeight) => {
-    // Calculate domain
+    // Calculate domain including potential negative values for margin
+    // const xMin = Math.min(0, ...dataXValues, userPointX); // Include 0 and negative values
+    const xMin = Math.min(...dataXValues, userPointX);
     const xMax = Math.max(...dataXValues, userPointX);
     const yMax = Math.max(...dataYValues, userPointY);
 
     // Create scales
     const xScale = d3.scaleLinear()
-      .domain([0, xMax * 1.1]) // Start from 0, extend 10% beyond max
+      .domain([xMin * 1.1, xMax * 1.1]) // Extend domain by 10% on both sides
       .range([0, innerWidth]);
     
     const yScale = d3.scaleLinear()
-      .domain([0, yMax * 1.1]) // Start from 0, extend 10% beyond max
+      .domain([0, yMax * 1.1]) // Start y from 0, extend 10% beyond max
       .range([innerHeight, 0]);
-      
     return { xScale, yScale };
   };
   
@@ -550,8 +615,12 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     };
     
     // Get the boundary lines
+    // ** WE REVERSED THE ORDER OF THESE BOUNDARIES **
+    const overspenderCoords = data.boundary_coordinates.saver_balanced;
+    const saverCoords= data.boundary_coordinates.balanced_overspender;
+
     const saverBoundary = extendBoundaryLine(
-      data.boundary_coordinates.saver_balanced, 
+      saverCoords, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -559,7 +628,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     );
     
     const overspenderBoundary = extendBoundaryLine(
-      data.boundary_coordinates.balanced_overspender, 
+      overspenderCoords, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -577,40 +646,42 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       const regionsGroup = svg.append("g")
         .attr("clip-path", `url(#${clipId})`);
       
-      // 1. saver region (above saver_balanced line)
       regionsGroup.append('path')
         .attr('d', `
-          M ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
-          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
+          M ${xScale(xMin)} ${yScale(yMin)}
+          L ${xScale(xMin)} ${yScale(yMax)}
+          L ${xScale(saverBoundary[0][0])} ${yScale(saverBoundary[0][1])}
+          L ${xScale(saverBoundary[1][0])} ${yScale(saverBoundary[1][1])}
           L ${xScale(xMax)} ${yScale(yMin)}
           L ${xScale(xMin)} ${yScale(yMin)}
           Z
         `)
+        .attr('fill', getCategoryColor('saver')) // Explicitly use green
+        .attr('fill-opacity', 0.1);
+      
+      
+      // 2. Balanced region (blue, middle)
+      regionsGroup.append('path')
+        .attr('d', `
+          M ${xScale(saverBoundary[0][0])} ${yScale(saverBoundary[0][1])}
+          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(saverBoundary[1][0])} ${yScale(saverBoundary[1][1])}
+          Z
+        `)
+        .attr('fill', getCategoryColor('balanced')) // Explicitly use blue
+        .attr('fill-opacity', 0.1);
+      
+      // 3. Overspender region (red, rightmost)
+      regionsGroup.append('path')
+        .attr('d', `
+          M ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
+          L ${xScale(xMin)} ${yScale(yMin)}
+          L ${xScale(xMin)} ${yScale(yMax)}
+          Z
+        `)
         .attr('fill', getCategoryColor('overspender'))
-        .attr('fill-opacity', 0.1);
-      
-      // 2. balanced region (between the two lines)
-      regionsGroup.append('path')
-        .attr('d', `
-          M ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
-          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
-          L ${xScale(xMax)} ${yScale(saverBoundary[1][1])}
-          L ${xScale(xMin)} ${yScale(saverBoundary[0][1])}
-          Z
-        `)
-        .attr('fill', getCategoryColor('balanced'))
-        .attr('fill-opacity', 0.1);
-      
-      // 3. overspender region (below balanced_overspender line)
-      regionsGroup.append('path')
-        .attr('d', `
-          M ${xScale(xMin)} ${yScale(yMax)}
-          L ${xScale(xMax)} ${yScale(yMax)}
-          L ${xScale(xMax)} ${yScale(overspenderBoundary[1][1])}
-          L ${xScale(xMin)} ${yScale(overspenderBoundary[0][1])}
-          Z
-        `)
-        .attr('fill', getCategoryColor('saver'))
         .attr('fill-opacity', 0.1);
       
       // Draw boundary lines (also clipped)
@@ -640,27 +711,280 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   
   // Draw data points with enhanced styling
   const drawDataPoints = (svg, data, xScale, yScale, colorScale) => {
+    // Create tooltip div if it doesn't exist
+    let tooltip = d3.select("body").select(".financial-tooltip");
+    if (tooltip.empty()) {
+      tooltip = d3.select("body").append("div")
+        .attr("class", "financial-tooltip")
+        .style("position", "absolute")
+        .style("padding", "12px")
+        .style("background-color", "rgba(0, 0, 0, 0.9)")
+        .style("color", "white")
+        .style("border-radius", "8px")
+        .style("pointer-events", "auto") // Allow interaction without scrolling
+        .style("font-size", "14px")
+        .style("z-index", "10000")
+        .style("display", "none")
+        .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
+        .style("border", "1px solid rgba(255,255,255,0.1)")
+        .style("max-width", "300px");
+    }
+  
+    // Map data points and include original point details if available
+    const enhancedDataPoints = data.dataset_points.map((d, i) => {
+      return {
+        x: d[1],                   // Budget margin
+        y: d[2],                   // Spending
+        category: d[0],            // Financial category
+        details: data.original_points && i < data.original_points.length ? 
+                 data.original_points[i] : null
+      };
+    });
+  
+    // Draw all data points
     svg.selectAll('circle.data-point')
-      .data(data.dataset_points)
+      .data(enhancedDataPoints)
       .enter()
       .append('circle')
       .attr('class', 'data-point')
-      .attr('cx', d => xScale(d[1]))
-      .attr('cy', d => yScale(d[2]))
+      .attr('cx', d => xScale(d.x))
+      .attr('cy', d => yScale(d.y))
       .attr('r', 4)
       .attr('fill', d => {
-        const category = getFinancialCategory(data, d[1], d[2]);
+        // Determine financial category from coordinates
+        const category = getFinancialCategory(data, d.x, d.y);
         return colorScale(category);
       })
       .attr('opacity', 0.7)
       .attr('stroke', '#fff')
       .attr('stroke-width', 0.5)
-      .attr('stroke-opacity', 0.3);
+      .attr('stroke-opacity', 0.3)
+      .style("cursor", "pointer")
+      .on("mouseover", function(event, d) {
+        // Show basic preview tooltip on hover
+        showPreviewTooltip(event, d, this, tooltip, colorScale, data, xScale, yScale);
+      })
+      .on("mouseout", function() {
+        // Hide tooltip on mouseout unless it's in detailed mode
+        if (!tooltip.classed("detailed-mode")) {
+          tooltip.style("display", "none");
+          
+          // Restore point appearance
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr('r', 4)
+            .attr('stroke-width', 0.5)
+            .attr('stroke-opacity', 0.3);
+        }
+      })
+      .on("mousemove", function(event) {
+        // Only move tooltip if not in detailed mode
+        if (!tooltip.classed("detailed-mode")) {
+          tooltip
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        }
+      })
+      .on("click", function(event, d) {
+        // Show detailed tooltip on click
+        showDetailedTooltip(event, d, this, tooltip, colorScale, data, xScale, yScale);
+        
+        // Mark tooltip as in detailed mode
+        tooltip.classed("detailed-mode", true);
+        
+        // Prevent event from bubbling to the SVG background
+        event.stopPropagation();
+      });
+        
+    // Add click handler to document to dismiss detailed tooltip
+    d3.select("body").on("click.dismiss-tooltip", function(event) {
+      // If clicking anywhere other than the tooltip or a data point
+      if (!tooltip.node().contains(event.target) && 
+          event.target.tagName.toLowerCase() !== 'circle') {
+        // Hide the tooltip and remove detailed mode
+        tooltip.style("display", "none")
+          .classed("detailed-mode", false);
+          
+        // Reset all data points to normal appearance
+        svg.selectAll('circle.data-point')
+          .transition()
+          .duration(200)
+          .attr('r', 4)
+          .attr('stroke-width', 0.5)
+          .attr('stroke-opacity', 0.3);
+      }
+    });
+    
+    return tooltip; // Return the tooltip for potential use by other components
   };
+  
+  // Function to show basic preview tooltip on hover
+  function showPreviewTooltip(event, d, element, tooltip, colorScale, data, xScale, yScale) {
+    // Get financial category for this point
+    const category = getFinancialCategory(data, d.x, d.y);
+    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Format financial values
+    const marginDisplay = d.x >= 0 ? `+$${d.x.toLocaleString()}` : `-$${Math.abs(d.x).toLocaleString()}`;
+    const spendingDisplay = `$${d.y.toLocaleString()}`;
+  
+    // Build basic tooltip content (preview only)
+    let tooltipContent = `
+      <div class="tooltip-header">
+        Data Preview
+        <div class="tooltip-hint">(Click for details)</div>
+      </div>
+      <div class="tooltip-grid">
+        <span class="tooltip-label">Category:</span>
+        <span class="tooltip-value" style="color: ${colorScale(category)};">
+          ${formattedCategory}
+        </span>
+        <span class="tooltip-label">Budget Margin:</span>
+        <span class="tooltip-value">${marginDisplay}</span>
+        <span class="tooltip-label">Total Spending:</span>
+        <span class="tooltip-value">${spendingDisplay}</span>
+      </div>
+    `;
+  
+    // Show tooltip with preview styling
+    tooltip
+      .classed("detailed-mode", false)
+      .style("display", "block")
+      .html(tooltipContent)
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+      
+    // Highlight the hovered point
+    d3.select(element)
+      .transition()
+      .duration(200)
+      .attr('r', 6)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 1);
+  }
+  
+  // Function to show detailed tooltip on click
+  function showDetailedTooltip(event, d, element, tooltip, colorScale, data, xScale, yScale) {
+    // Get financial category for this point
+    const category = getFinancialCategory(data, d.x, d.y);
+    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Format financial values
+    const marginDisplay = d.x >= 0 ? `+${d.x.toLocaleString()}` : `-${Math.abs(d.x).toLocaleString()}`;
+    const spendingDisplay = `${d.y.toLocaleString()}`;
+  
+    // Build detailed tooltip content
+    let tooltipContent = `
+    `;
+    
+    // Add detailed breakdown if available
+    if (d.details) {
+      // Add separator
+      tooltipContent += `
+        <div class="tooltip-header">
+          Detailed Breakdown
+        </div>
+        <div class="tooltip-grid">
+      `;
+      
+      
+      // First add priority fields if they exist
+      const detailEntries = Object.entries(d.details);
+      const ignoredFields = ['preferred_payment_method'];
+      const displayedFields = [];
+      
+      for (const entry of detailEntries) {
+        if (!ignoredFields.includes(entry[0])) {
+          console.log(entry);
+          displayedFields.push(entry);
+        }
+      }
+      
+      // Add each selected field to the tooltip
+      for (const [key, value] of displayedFields) {
+        // Format key for display (capitalize, replace underscores)
+        const formattedKey = key
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        // Determine if value should be displayed as currency or not
+        let formattedValue;
+        
+        // Non-currency fields
+        const nonCurrencyFields = ['age', 'major', 'year', 'school', 'gender', 'name', 'email', 'phone', 'address', 'city', 'state', 'zip', 'country'];
+        
+        // Check if it's a string or a non-currency field
+        if (typeof value === 'string' || nonCurrencyFields.includes(key)) {
+          formattedValue = value;
+        } 
+        // Check if it's a small number that might be an age
+        else if (key === 'age' || (key.includes('age') && value < 100)) {
+          formattedValue = value;
+        }
+        // Otherwise format as currency
+        else {
+          formattedValue = `${value.toLocaleString()}`;
+        }
+          
+        tooltipContent += `
+          <span class="tooltip-label">${formattedKey}:</span>
+          <span class="tooltip-value">${formattedValue}</span>
+        `;
+      }
+      
+      // Add a note if there are more fields not shown
+      if (Object.keys(d.details).length > displayedFields.length) {
+        tooltipContent += `
+          <span class="tooltip-note" style="grid-column: span 2; font-size: 11px; color: rgba(255,255,255,0.6); text-align: center; margin-top: 8px;">
+            Showing ${displayedFields.length} of ${Object.keys(d.details).length} available fields
+          </span>
+        `;
+      }
+      tooltipContent += '</div>';
+    }
+  
+  
+    // Show tooltip with detailed styling
+    tooltip
+      .classed("detailed-mode", true)
+      .style("display", "block")
+      .html(tooltipContent)
+      .style("left", (event.pageX + 15) + "px")
+      .style("top", (event.pageY - 28) + "px");
+      
+    // Highlight the clicked point
+    d3.select(element)
+      .transition()
+      .duration(200)
+      .attr('r', 6)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 1);
+      
+    // Add close button event handler
+    tooltip.select(".close-tooltip-btn").on("click", function() {
+      // Hide tooltip and remove detailed mode
+      tooltip.style("display", "none")
+        .classed("detailed-mode", false);
+        
+      // Reset point appearance
+      d3.select(element)
+        .transition()
+        .duration(200)
+        .attr('r', 4)
+        .attr('stroke-width', 0.5)
+        .attr('stroke-opacity', 0.3);
+        
+      // Stop propagation to prevent triggering document click
+      d3.event ? d3.event.stopPropagation() : event.stopPropagation();
+    });
+  }
+  
   
   // Draw user point with enhanced styling and tooltip
   const drawUserPoint = (svg, userPointX, userPointY, xScale, yScale, tooltip, monthlyIncome, 
-                         monthlySpending, spendingRatio, savingsAmount, financialCategory) => {
+                         monthlySpending, budgetMargin, savingsAmount, financialCategory) => {
     // Add glow effect for user point
     const defs = svg.append('defs');
     
@@ -718,7 +1042,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .on("mouseover", function(event) {
         const formattedCategory = financialCategory.charAt(0).toUpperCase() + financialCategory.slice(1);
         console.log(`Financial Category: ${financialCategory}`);
-        console.log("hello");
         const savingsDisplay = savingsAmount >= 0 ? 
           `$${savingsAmount.toLocaleString()}` : 
           `-$${Math.abs(savingsAmount).toLocaleString()}`;
@@ -734,9 +1057,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
               
               <span class="tooltip-label">Monthly Spending:</span>
               <span class="tooltip-value">$${monthlySpending.toLocaleString()}</span>
-              
-              <span class="tooltip-label">Spending Ratio:</span>
-              <span class="tooltip-value">${spendingRatio.toFixed(2)}</span>
               
               <span class="tooltip-label">Monthly Savings:</span>
               <span class="tooltip-value" style="color: ${savingsAmount >= 0 ? getCategoryColor('positive') : getCategoryColor('negative')}">
@@ -783,7 +1103,11 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const xAxis = d3.axisBottom(xScale)
       .ticks(6)
       .tickSize(6)
-      .tickPadding(8);
+      .tickPadding(8)
+      .tickFormat(d => {
+        // Format ticks to show positive/negative sign for margin
+        return d >= 0 ? `+$${d}` : `-$${Math.abs(d)}`;
+      });
     
     const yAxis = d3.axisLeft(yScale)
       .ticks(6)
@@ -814,7 +1138,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('text-anchor', 'middle')
       .attr('fill', 'rgba(255,255,255,0.8)')
       .attr('font-size', '14px')
-      .text('Spending to Income Ratio');
+      .text('Monthly Budget Margin (Income - Spending)');
     
     svg.append('text')
       .attr('transform', 'rotate(-90)')
@@ -834,7 +1158,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     }
     
     // Set up dimensions with better proportions
-    const width = 800;
+    const width = 750;
     const height = 500;
     const margin = { top: 50, right: 50, bottom: 60, left: 60 };
     const innerWidth = width - margin.left - margin.right;
@@ -844,7 +1168,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const svg = setupChart(svgRef, width, height, margin);
     
     // Extract data values for scaling
-    const dataXValues = data.dataset_points.map(d => d[1]); // spending_ratio
+    const dataXValues = data.dataset_points.map(d => d[1]); // budget_margin
     const dataYValues = data.dataset_points.map(d => d[2]); // total_spending
     
     // Create scales
@@ -867,7 +1191,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     drawBoundaryAreas(svg, data, xScale, yScale, innerWidth, innerHeight);
     
     // Draw data points
-    drawDataPoints(svg, data, xScale, yScale, colorScale);
+    drawDataPoints(svg, data, xScale, yScale, colorScale, tooltipRef.current);
     
     // Draw axes
     drawAxes(svg, xScale, yScale, innerWidth, innerHeight);
@@ -882,12 +1206,13 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       tooltipRef.current,
       monthlyIncome, 
       monthlySpending, 
-      spendingRatio, 
+      budgetMargin, 
       savingsAmount,
       financialCategory
     );
+  }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
     
-  }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, spendingRatio, savingsAmount]);
+  // }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
   
   return (
     <div className="visualization-container">
@@ -909,68 +1234,37 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
 // --------------------------
 // FINANCIAL CATEGORY CLASSIFIER
 // --------------------------
-const getFinancialCategory = (data, userPointX, userPointY) => {
-  // Default to balanced if boundaries aren't available
+const getFinancialCategory = (data, px, py) => {
   if (!data.boundary_coordinates) {
     console.log("No boundary coordinates available");
     return 'balanced';
   }
   
-  // Initialize variables to track position relative to boundaries
-  let isAboveSaverBalancedLine = false;
-  let isAboveBalancedOverspenderLine = false;
+  const pointSide = (p1, p2, px, py) => {
+    return (p2[0] - p1[0]) * (py - p1[1]) - (p2[1] - p1[1]) * (px - p1[0]);
+  };
+
+  let isBelowSaver = false;
+  let isBelowOverspender = false;
   
-  // Check position relative to saver_balanced boundary line
-  if (data.boundary_coordinates?.saver_balanced && data.boundary_coordinates.saver_balanced.length >= 2) {
-    const points = data.boundary_coordinates.saver_balanced;
-    
-    // Calculate line equation
-    const x1 = points[0][0];
-    const y1 = points[0][1];
-    const x2 = points[1][0];
-    const y2 = points[1][1];
-    
-    const slope = (y2 - y1) / (x2 - x1);
-    const yIntercept = y1 - (slope * x1);
-    
-    // Calculate y value at user's x position
-    const boundaryYAtUserX = (slope * userPointX) + yIntercept;
-    
-    // Check if user is above this line
-    isAboveSaverBalancedLine = userPointY > boundaryYAtUserX;
+  // Check against saver_balanced line
+  if (data.boundary_coordinates.saver_balanced?.length >= 2) {
+    const [p1, p2] = data.boundary_coordinates.saver_balanced;
+    const side = pointSide(p1, p2, px, py);
+    isBelowSaver = side < 0; 
   }
   
-  // Check position relative to balanced_overspender boundary line
-  if (data.boundary_coordinates?.balanced_overspender && data.boundary_coordinates.balanced_overspender.length >= 2) {
-    const points = data.boundary_coordinates.balanced_overspender;
-    
-    // Calculate line equation
-    const x1 = points[0][0];
-    const y1 = points[0][1];
-    const x2 = points[1][0];
-    const y2 = points[1][1];
-    
-    const slope = (y2 - y1) / (x2 - x1);
-    const yIntercept = y1 - (slope * x1);
-    
-    // Calculate y value at user's x position
-    const boundaryYAtUserX = (slope * userPointX) + yIntercept;
-    
-    // Check if user is above this line
-    isAboveBalancedOverspenderLine = userPointY > boundaryYAtUserX;
+  // Check against balanced_overspender line
+  if (data.boundary_coordinates.balanced_overspender?.length >= 2) {
+    const [p1, p2] = data.boundary_coordinates.balanced_overspender;
+    const side = pointSide(p1, p2, px, py);
+    isBelowOverspender = side > 0;
   }
   
-  // REVERSED LOGIC: Determine category based on position relative to both lines
-  let category;
-  if (isAboveSaverBalancedLine) {
-    category = 'saver';  // REVERSED: saver if ABOVE saver_balanced line
-  } else if (!isAboveBalancedOverspenderLine) {
-    category = 'overspender';  // REVERSED: overspender if BELOW balanced_overspender line
-  } else {
-    category = 'balanced';  // balanced if between the two lines
-  }
-  
-  return category;
+  // Decide category
+  if (isBelowSaver) return 'overspender';
+  else if (!isBelowOverspender) return 'saver';
+  else return 'balanced';
 };
 
 // --------------------------
@@ -1094,13 +1388,13 @@ const FinancialDashboard = () => {
   };
   
   // Calculate financial metrics for the user
-  const financialMetrics = calculateFinancialMetrics(userInputs);
+  const { metrics: financialMetrics, loading: metricsLoading, error: metricsError } = useCalculateFinancialMetrics(userInputs);
   
   // Determine financial category
   const financialCategory = getFinancialCategory(
     data, 
-    financialMetrics.userPointX, 
-    financialMetrics.userPointY
+    financialMetrics.user_point_x, 
+    financialMetrics.user_point_y
   );
   
   // Toggle sliders visibility
@@ -1171,7 +1465,7 @@ const FinancialDashboard = () => {
         
         {/* Left panel - Visualization & Summary */}
         <div className={`visualization-panel ${!showSliders ? 'full-width' : ''}`}>
-          <h2 className="dashboard-title">Financial Spending Analysis</h2>
+          <h2 className="app-font dashboard-title">Financial Spending Analysis</h2>
           
           {loading ? (
             <div className="loading-container">
@@ -1193,10 +1487,10 @@ const FinancialDashboard = () => {
               {/* Financial Insights Panel */}
               <FinancialInsightsPanel 
                 financialCategory={financialCategory}
-                monthlyIncome={financialMetrics.monthlyIncome}
-                monthlySpending={financialMetrics.monthlySpending}
-                spendingRatio={financialMetrics.spendingRatio}
-                savingsAmount={financialMetrics.savingsAmount}
+                monthlyIncome={financialMetrics.monthly_income}
+                monthlySpending={financialMetrics.monthly_spending}
+                budgetMargin={financialMetrics.budget_margin}
+                savingsAmount={financialMetrics.savings_amount}
               />
             </div>
           )}
@@ -1206,7 +1500,7 @@ const FinancialDashboard = () => {
         {showSliders && (
           <div className="sliders-panel">
             <div className="sliders-header">
-              <h2 className="sliders-title">Adjust Your Financial Details</h2>
+              <h2 className="app-font sliders-title">Adjust Your Financial Details</h2>
               <button 
                 className="reset-btn" 
                 onClick={handleReset}

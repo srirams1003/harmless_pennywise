@@ -10,7 +10,7 @@ function AppContent() {
 
 	return (
 		<>
-			<h1>Harmless PennyWise</h1>
+			<h1 className="app-font">Harmless PennyWise</h1>
 			<div id="container-for-views" style={{ display: 'flex', flexDirection: 'column' }}>
 				<div className="premium-button-wrapper">
 					<div className="premium-button-container">
@@ -21,7 +21,7 @@ function AppContent() {
 						>
 						<div className="button-glow"></div>
 						<span className="button-text">
-							{showForm ? 'Hide Form' : 'Analyze My Finances'}
+							<span className="app-font">{showForm ? 'Hide Form' : 'Analyze My Finances'}</span>
 							<span className="button-icon">{showForm ? '↑' : '↓'}</span>
 						</span>
 						</button>
