@@ -736,7 +736,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
         x: d[1],                   // Budget margin
         y: d[2],                   // Spending
         category: d[0],            // Financial category
-        metrics: data.metrics[i] && i < data.metrics.length ?
+        metrics: data.metrics && i < data.metrics.length ?
                  data.metrics[i] : null,
         details: data.original_points && i < data.original_points.length ? 
                  data.original_points[i] : null,
