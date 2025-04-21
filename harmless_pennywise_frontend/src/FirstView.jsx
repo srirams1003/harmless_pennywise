@@ -826,7 +826,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     // Get financial category for this point
     const category = getFinancialCategory(data, d.x, d.y);
     const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
-    const savingsAmount = d.metrics["savings_amount"];
+    const savingsAmount = -d.x;
 
     // Format financial values
     const marginDisplay = d.x >= 0 ? `+$${d.x.toLocaleString()}` : `-$${Math.abs(d.x).toLocaleString()}`;
@@ -1154,7 +1154,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('text-anchor', 'middle')
       .attr('fill', 'rgba(255,255,255,0.8)')
       .attr('font-size', '14px')
-      .text('Monthly Budget Margin (Spending - Income)');
+      .text('Monthly Budget Margin');
     
     svg.append('text')
       .attr('transform', 'rotate(-90)')
