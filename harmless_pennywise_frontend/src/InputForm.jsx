@@ -37,32 +37,32 @@ const InputForm = () => {
 
   const handleChange = (e) => {
     // Comment out the prefill during production
-    // let { name, value } = e.target;
-    // if (!isNaN(value)) {
-    //   value = parseFloat(value);
-    // }
-    // setFormData((prev) => ({ ...prev, [name]: value }));
+    let { name, value } = e.target;
+    if (!isNaN(value)) {
+      value = parseFloat(value);
+    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // For development only - prefill form data
-    setFormData({
-      "age": 22,
-      "gender": "Male",
-      "year_in_school": "Senior",
-      "major": "Computer Science",
-      "monthly_income": 1100,
-      "financial_aid": 600,
-      "tuition": 13000,
-      "housing": 700,
-      "food": 300,
-      "transportation": 160,
-      "books_supplies": 120,
-      "entertainment": 250,
-      "personal_care": 130,
-      "technology": 100,
-      "health_wellness": 200,
-      "miscellaneous": 70,
-      "preferred_payment_method": "Credit/Debit Card"
-    });
+    // // For development only - prefill form data
+    // setFormData({
+    //   "age": 22,
+    //   "gender": "Male",
+    //   "year_in_school": "Senior",
+    //   "major": "Computer Science",
+    //   "monthly_income": 1100,
+    //   "financial_aid": 600,
+    //   "tuition": 13000,
+    //   "housing": 700,
+    //   "food": 300,
+    //   "transportation": 160,
+    //   "books_supplies": 120,
+    //   "entertainment": 250,
+    //   "personal_care": 130,
+    //   "technology": 100,
+    //   "health_wellness": 200,
+    //   "miscellaneous": 70,
+    //   "preferred_payment_method": "Credit/Debit Card"
+    // });
   };
 
   const handleSubmit = async (e) => {
