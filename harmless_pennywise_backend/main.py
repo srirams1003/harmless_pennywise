@@ -23,6 +23,47 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+def calculate_metrics(user_inputs: dict):
+    """
+    Calculate financial metrics based on user inputs.
+    Adjust tuition, financial aid, and books_supplies by dividing by 4 (semester to monthly).
+    """
+    # Adjust semester-based inputs to monthly
+    adjusted_user_inputs = user_inputs.copy()
+    
+    adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 4
+    adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 4
+    adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 4
+
+    # Calculate monthly income
+    monthly_income = user_inputs["monthly_income"] + adjusted_user_inputs["financial_aid"]
+    
+    # Calculate monthly spending
+    monthly_spending = sum(
+        value for key, value in adjusted_user_inputs.items()
+        if key not in ["monthly_income", "financial_aid"] and type(value) in [int, float]
+    )
+    
+    # Calculate financial metrics
+    budget_margin =  monthly_spending - monthly_income 
+    savings_amount = monthly_income - monthly_spending  
+    savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0
+    
+    # User point coordinates (using monthly values)
+    user_point_x = budget_margin
+    user_point_y = monthly_spending
+
+    return {
+        "adjusted_user_inputs": adjusted_user_inputs,
+        "monthly_income": monthly_income,
+        "monthly_spending": monthly_spending,
+        "budget_margin": budget_margin,
+        "savings_amount": savings_amount,
+        "savings_rate": savings_rate,
+        "user_point_x": user_point_x,
+        "user_point_y": user_point_y
+    }
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Harmless Pennywise API"}
@@ -53,54 +94,87 @@ def add_user(name: str, age: int):
 
 @app.post("/initial_data")
 def make_initial_data():
-    import pickle
-    import numpy as np
-    import pandas as pd
+    try:
+        import pickle
+        import numpy as np
+        import pandas as pd
 
-    # Load boundary_models
-    with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
-        boundary_models = pickle.load(f)
+        # Load boundary_models
+        with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
+            boundary_models = pickle.load(f)
 
-    log_reg_saver_balanced = boundary_models["saver_balanced"]
-    log_reg_balanced_overspender = boundary_models["balanced_overspender"]
+        log_reg_saver_balanced = boundary_models["saver_balanced"]
+        log_reg_balanced_overspender = boundary_models["balanced_overspender"]
 
-    # Load dataset with computed spending_margin
-    df = pd.read_csv("./spending_analysis_outputs/student_spending_categorized_gmm.csv")
+        # Load dataset with computed spending_margin
+        df = pd.read_csv("./spending_analysis_outputs/student_spending_categorized_gmm.csv")
 
-    # Generate x-values for spending_margin boundaries
-    max_margin = np.round(df["spending_margin"].max())
-    x_vals = np.array([max_margin - 1, max_margin])
+        # Generate x-values for spending_margin boundaries
+        max_margin = np.round(df["spending_margin"].max())
+        x_vals = np.array([max_margin - 1, max_margin])
 
-    # Compute decision boundaries
-    boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
-    boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
+        # Compute decision boundaries
+        boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
+        boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
 
-    # Convert to lists for return
-    x_vals = x_vals.tolist()
-    boundary_1_y = boundary_1_y.tolist()
-    boundary_2_y = boundary_2_y.tolist()
+        # Convert to lists for return
+        x_vals = x_vals.tolist()
+        boundary_1_y = boundary_1_y.tolist()
+        boundary_2_y = boundary_2_y.tolist()
 
-    boundary_coordinates = {
-        "saver_balanced": [[x_vals[0], boundary_1_y[0]], [x_vals[1], boundary_1_y[1]]],
-        "balanced_overspender": [[x_vals[0], boundary_2_y[0]], [x_vals[1], boundary_2_y[1]]],
-    }
+        boundary_coordinates = {
+            "saver_balanced": [[x_vals[0], boundary_1_y[0]], [x_vals[1], boundary_1_y[1]]],
+            "balanced_overspender": [[x_vals[0], boundary_2_y[0]], [x_vals[1], boundary_2_y[1]]],
+        }
 
-    # Replace spending_ratio with spending_margin in dataset_points
-    dataset_points = [
-        [row['spending_category'], row['spending_margin'], row['total_spending']]
-        for _, row in df.iterrows()
-    ]
+        # Replace spending_ratio with spending_margin in dataset_points
+        dataset_points = [
+            [row['spending_category'], row['spending_margin'], row['total_spending']]
+            for _, row in df.iterrows()
+        ]
 
-    df_original = pd.read_csv("student_spending.csv")
-    if "Unnamed: 0" in df_original.columns:
-        df_original = df_original.drop(columns=["Unnamed: 0"])
-    original_points = df_original.to_dict(orient='records')
+        df_original = pd.read_csv("student_spending.csv")
+        if "Unnamed: 0" in df_original.columns:
+            df_original = df_original.drop(columns=["Unnamed: 0"])
+        original_points = df_original.to_dict(orient='records')
 
-    return {
-        "boundary_coordinates": boundary_coordinates,
-        "dataset_points": dataset_points,
-        "original_points": original_points
-    }
+        # Calculate metrics for each data point
+        metrics = []
+        for data_point in original_points:
+            try:
+                metric = calculate_metrics(data_point)
+                metrics.append(metric)
+            except Exception as e:
+                print(f"Error calculating metrics for data point: {e}")
+                # Add a placeholder metric to maintain array structure
+                metrics.append({
+                    "monthly_income": 0,
+                    "monthly_spending": 0,
+                    "budget_margin": 0,
+                    "savings_amount": 0,
+                    "savings_rate": 0,
+                    "user_point_x": 0,
+                    "user_point_y": 0
+                })
+
+        return {
+            "boundary_coordinates": boundary_coordinates,
+            "dataset_points": dataset_points,
+            "original_points": original_points,
+            "metrics": metrics
+        }
+    except Exception as e:
+        print(f"Error in make_initial_data: {str(e)}")
+        # Return a fallback response with minimal data
+        return {
+            "boundary_coordinates": {
+                "saver_balanced": [[0, 0], [100, 100]],
+                "balanced_overspender": [[100, 100], [200, 0]]
+            },
+            "dataset_points": [],
+            "original_points": [],
+            "metrics": []
+        }
 
 class StudentInput(BaseModel):
     age: int
@@ -128,40 +202,7 @@ def calculate_financial_metrics(user_inputs: dict):
     Calculate financial metrics based on user inputs.
     Adjust tuition, financial aid, and books_supplies by dividing by 4 (semester to monthly).
     """
-    # Adjust semester-based inputs to monthly
-    adjusted_user_inputs = user_inputs.copy()
-    adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 4
-    adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 4
-    adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 4
-
-    # Calculate monthly income
-    monthly_income = user_inputs["monthly_income"] + adjusted_user_inputs["financial_aid"]
-
-    # Calculate monthly spending
-    monthly_spending = sum(
-        value for key, value in adjusted_user_inputs.items()
-        if key not in ["monthly_income", "financial_aid"]
-    )
-
-    # Calculate financial metrics
-    budget_margin = monthly_income - monthly_spending;
-    savings_amount = monthly_income - monthly_spending
-    savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0
-
-    # User point coordinates (using monthly values)
-    user_point_x = budget_margin
-    user_point_y = monthly_spending
-
-    return {
-        "adjusted_user_inputs": adjusted_user_inputs,
-        "monthly_income": monthly_income,
-        "monthly_spending": monthly_spending,
-        "budget_margin": budget_margin,
-        "savings_amount": savings_amount,
-        "savings_rate": savings_rate,
-        "user_point_x": user_point_x,
-        "user_point_y": user_point_y
-    }
+    return calculate_metrics(user_inputs)
 
 @app.post("/predict_category")
 # Define function to predict using logistic regression decision boundaries

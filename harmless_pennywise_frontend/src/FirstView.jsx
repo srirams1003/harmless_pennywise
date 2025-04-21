@@ -102,25 +102,25 @@ const useCalculateFinancialMetrics = (userInputs) => {
 
   // Use local calculation as fallback
   const calculateLocalMetrics = () => {
-  // Adjust tuition, financial_aid, and books_supplies by dividing by 4 (semester to monthly)
-  const adjustedUserInputs = {...userInputs};
-  adjustedUserInputs.tuition = adjustedUserInputs.tuition / 4;
-  adjustedUserInputs.financial_aid = adjustedUserInputs.financial_aid / 4;
-  adjustedUserInputs.books_supplies = adjustedUserInputs.books_supplies / 4;
-  
-  const monthlyIncome = userInputs.monthly_income + adjustedUserInputs.financial_aid;
-  const monthlySpending = Object.entries(adjustedUserInputs).reduce((sum, [key, value]) => {
-    if (key === 'monthly_income' || key === 'financial_aid') {
-      return sum;
-    }
-    // Keep values as monthly
-    return sum + value;
-  }, 0);
-  
+    // Adjust tuition, financial_aid, and books_supplies by dividing by 4 (semester to monthly)
+    const adjustedUserInputs = {...userInputs};
+    adjustedUserInputs.tuition = adjustedUserInputs.tuition / 4;
+    adjustedUserInputs.financial_aid = adjustedUserInputs.financial_aid / 4;
+    adjustedUserInputs.books_supplies = adjustedUserInputs.books_supplies / 4;
+    
+    const monthlyIncome = userInputs.monthly_income + adjustedUserInputs.financial_aid;
+    const monthlySpending = Object.entries(adjustedUserInputs).reduce((sum, [key, value]) => {
+      if (key === 'monthly_income' || key === 'financial_aid') {
+        return sum;
+      }
+      // Keep values as monthly
+      return sum + value;
+    }, 0);
+    
     // Changed from ratio to margin (spending minus income)
-    const budgetMargin = monthlyIncome - monthlySpending;
-  const savingsAmount = monthlyIncome - monthlySpending;
-  const savingsRate = (savingsAmount / monthlyIncome) * 100;
+    const budgetMargin = monthlySpending- monthlyIncome;
+    const savingsAmount = monthlySpending- monthlyIncome;
+    const savingsRate = (savingsAmount / monthlyIncome) * 100;
 
   return {
       monthly_income: monthlyIncome,
@@ -620,7 +620,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     const saverCoords= data.boundary_coordinates.balanced_overspender;
 
     const saverBoundary = extendBoundaryLine(
-      saverCoords, 
+      data.boundary_coordinates.saver_balanced, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -628,7 +628,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     );
     
     const overspenderBoundary = extendBoundaryLine(
-      overspenderCoords, 
+      data.boundary_coordinates.balanced_overspender, 
       xScale, 
       yScale, 
       innerWidth, 
@@ -676,9 +676,9 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       regionsGroup.append('path')
         .attr('d', `
           M ${xScale(overspenderBoundary[0][0])} ${yScale(overspenderBoundary[0][1])}
+          L ${xScale(xMax)} ${yScale(yMin)}
+          L ${xScale(xMax)} ${yScale(yMax)}
           L ${xScale(overspenderBoundary[1][0])} ${yScale(overspenderBoundary[1][1])}
-          L ${xScale(xMin)} ${yScale(yMin)}
-          L ${xScale(xMin)} ${yScale(yMax)}
           Z
         `)
         .attr('fill', getCategoryColor('overspender'))
@@ -729,15 +729,17 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
         .style("border", "1px solid rgba(255,255,255,0.1)")
         .style("max-width", "300px");
     }
-  
+    
     // Map data points and include original point details if available
     const enhancedDataPoints = data.dataset_points.map((d, i) => {
       return {
         x: d[1],                   // Budget margin
         y: d[2],                   // Spending
         category: d[0],            // Financial category
+        metrics: data.metrics[i] && i < data.metrics.length ?
+                 data.metrics[i] : null,
         details: data.original_points && i < data.original_points.length ? 
-                 data.original_points[i] : null
+                 data.original_points[i] : null,
       };
     });
   
@@ -824,11 +826,12 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     // Get financial category for this point
     const category = getFinancialCategory(data, d.x, d.y);
     const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
-    
+    const savingsAmount = d.metrics["savings_amount"];
+
     // Format financial values
     const marginDisplay = d.x >= 0 ? `+$${d.x.toLocaleString()}` : `-$${Math.abs(d.x).toLocaleString()}`;
     const spendingDisplay = `$${d.y.toLocaleString()}`;
-  
+    
     // Build basic tooltip content (preview only)
     let tooltipContent = `
       <div class="tooltip-header">
@@ -836,14 +839,20 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
         <div class="tooltip-hint">(Click for details)</div>
       </div>
       <div class="tooltip-grid">
+        <span class="tooltip-label">Monthly Income:</span>
+        <span class="tooltip-value">$${d.details?.monthly_income?.toLocaleString() || 'N/A'}</span>
+        <span class="tooltip-label">Total Spending:</span>
+        <span class="tooltip-value">${spendingDisplay}</span>
+        <span class="tooltip-label">Monthly Savings:</span>
+        <span class="tooltip-value" style="color: ${savingsAmount >= 0 ? getCategoryColor('positive') : getCategoryColor('negative')}">
+        ${savingsAmount >= 0 ? `$${savingsAmount.toLocaleString()}` : `-$${Math.abs(savingsAmount).toLocaleString()}`}
+        </span>
         <span class="tooltip-label">Category:</span>
         <span class="tooltip-value" style="color: ${colorScale(category)};">
           ${formattedCategory}
         </span>
         <span class="tooltip-label">Budget Margin:</span>
         <span class="tooltip-value">${marginDisplay}</span>
-        <span class="tooltip-label">Total Spending:</span>
-        <span class="tooltip-value">${spendingDisplay}</span>
       </div>
     `;
   
@@ -869,10 +878,6 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
     // Get financial category for this point
     const category = getFinancialCategory(data, d.x, d.y);
     const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
-    
-    // Format financial values
-    const marginDisplay = d.x >= 0 ? `+${d.x.toLocaleString()}` : `-${Math.abs(d.x).toLocaleString()}`;
-    const spendingDisplay = `${d.y.toLocaleString()}`;
   
     // Build detailed tooltip content
     let tooltipContent = `
@@ -985,6 +990,15 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
   // Draw user point with enhanced styling and tooltip
   const drawUserPoint = (svg, userPointX, userPointY, xScale, yScale, tooltip, monthlyIncome, 
                          monthlySpending, budgetMargin, savingsAmount, financialCategory) => {
+
+    // user data 
+    const userData = {
+      monthly_income: monthlyIncome,
+      monthly_spending: monthlySpending,
+      budget_margin: budgetMargin,
+      savings_amount: savingsAmount,
+      financial_category: financialCategory
+    };
     // Add glow effect for user point
     const defs = svg.append('defs');
     
@@ -1067,6 +1081,8 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
               <span class="tooltip-value" style="color: ${getCategoryColor(financialCategory) || 'white'};">
                 ${formattedCategory}
               </span>
+              <span class="tooltip-label">Budget Margin:</span>
+              <span class="tooltip-value">${budgetMargin >= 0 ? `+$${budgetMargin.toLocaleString()}` : `-$${Math.abs(budgetMargin).toLocaleString()}`}</span>
             </div>
           `)
           .style("left", (event.pageX + 15) + "px")
@@ -1138,7 +1154,7 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
       .attr('text-anchor', 'middle')
       .attr('fill', 'rgba(255,255,255,0.8)')
       .attr('font-size', '14px')
-      .text('Monthly Budget Margin (Income - Spending)');
+      .text('Monthly Budget Margin (Spending - Income)');
     
     svg.append('text')
       .attr('transform', 'rotate(-90)')
@@ -1262,8 +1278,8 @@ const getFinancialCategory = (data, px, py) => {
   }
   
   // Decide category
-  if (isBelowSaver) return 'overspender';
-  else if (!isBelowOverspender) return 'saver';
+  if (isBelowSaver) return 'saver';
+  else if (!isBelowOverspender) return 'overspender';
   else return 'balanced';
 };
 
