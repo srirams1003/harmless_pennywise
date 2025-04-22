@@ -1,84 +1,148 @@
-## Setup for Backend:
+# Harmless Pennywise: Your Friendly College Budget Companion
 
-First install the necessary python packages:
+Harmless Pennywise is a smart budgeting web application designed specifically for college students. It helps users:
+
+- Track monthly income and categorized expenses
+- Get classified as a **Saver**, **Balanced**, or **Over-Spender**
+- Adjust budgets dynamically using sliders
+- Gain real-time insights through interactive data visualizations
+- Compare spending behavior anonymously with peers
+
+The app uses AI-driven financial categorization and offers intuitive tools to make budgeting both insightful and engaging.
+
+🔗 **Live Web App**: [https://harmless-pennywise.up.railway.app/](https://harmless-pennywise.up.railway.app/)
+
+---
+
+## 🖥️ Tech Stack
+- **Frontend:** React.js, D3.js, Chart.js
+- **Backend:** Python, FastAPI
+- **Database:** MySQL (Dockerized only for local use)
+- **ML Models:** Scikit-learn (GMM + Logistic Regression)
+- **Deployment:** Railway (Production)
+
+---
+
+## 🚀 Local Setup Instructions
+
+### 🔧 Backend Setup
+
+1. Install the necessary Python packages:
 ```sh
-pip install fastapi uvicorn pymysql python-dotenv 
+pip install fastapi uvicorn pymysql python-dotenv
 ```
 
-Next, pull the docker image for MySQL:
+2. Pull the MySQL Docker image:
 ```sh
 docker pull mysql:latest
 ```
 
-## Starting the backend service:
+---
 
-Now, to run the backend service for the very first time (or if you delete the docker container for MySQL), do:
+### ▶️ Running the Backend
+
+To start the backend for the **first time** or after deleting the MySQL container:
 ```sh
 ./clean_startup.sh
 ```
 
-- Note: Based on how good your PC is, you may need to increase the sleep time in the startup scripts to give the mysql container enough time to start before executing the subsequent commands.
+> 💡 *If the script fails, try increasing sleep duration in the script to allow the MySQL container more time to initialize.*
 
-If you already have the container created before and just need to start it back up, do:
+If you've already run the container previously, use:
 ```sh
 ./startup.sh
 ```
 
-Now, you can access the backend endpoints from a browser or API on 
-`localhost:8000/users`
-and 
-`localhost:8000/`
+The backend will be available at:
+- `http://localhost:8000/users`
+- `http://localhost:8000/`
 
+---
 
-Optional: If you want to inspect the database manually (out of curiosity or to debug a query):
+### 🛠️ Optional: Access MySQL Container Directly
 ```sh
 docker exec -it harmless_pennywise_db mysql -uroot -p
 ```
-- The password is `root`, as set above.
-- Then you can use commands like 
-    - `show databases;`
-    - `use harmless_pennywise`
-    - `show tables;`
-    - `select * from users;`
+- Password: `root`
 
+Then you can run commands like:
+```sql
+show databases;
+use harmless_pennywise;
+show tables;
+select * from users;
+```
 
-## Setup for Frontend:
+---
 
-First install the necessary frontend packages. From inside the frontend directory, run:
+### 🎨 Frontend Setup
+
+Navigate to the frontend directory and run:
 ```sh
 npm install
 ```
 
-## Starting the frontend service:
-
-To run the frontend service using React, from inside the frontend directory, run:
+### ▶️ Running the Frontend
 ```sh
 npm run dev
 ```
+Access the frontend on:
+- `http://localhost:5173/`
 
-You can now access the frontend on `localhost:5173/`
+---
 
+## 🧠 Behind the Scenes
 
+### 📊 Data Processing & ML:
+- Uses a student spending dataset (Kaggle) with features like income, tuition, food, etc.
+- Applies **Gaussian Mixture Modeling** for soft clustering into 3 categories.
+- Uses **Logistic Regression** to draw decision boundaries between categories.
+- All this powers real-time classification and feedback in the frontend.
 
-## Additional details about how the startup scripts work for the backend:
+### 📈 Visualizations:
+- **Dynamic Scatterplot**: Shows your spending position vs. peers
+- **Interactive Sliders**: Adjust spending and see instant updates
+- **Grouped Bar Chart**: Compare your category-wise spending with peer averages
 
-This command starts the MySQL server database on a docker container and exposes it on your local port 3307 (we could use port 3306 locally but the local MySQL server runs on it, and therefore, is a conflict):
+---
+
+## 🧪 Additional Details on Startup Scripts
+
+The `clean_startup.sh` script:
+- Starts a new MySQL container:
 ```sh
-docker run --name harmless_pennywise_db -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=harmless_pennywise -p 3307:3306 -d mysql:latest
+docker run --name harmless_pennywise_db \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=harmless_pennywise \
+  -p 3307:3306 -d mysql:latest
 ```
-
-If you need to stop the docker container with the MySQL database:
-```sh
-docker rm harmless_pennywise_db
-```
-
-This command imports the data from the csv file into the MySQL database server running on the docker container:
+- Imports data into MySQL from a CSV:
 ```sh
 python database.py
 ```
-
-This command runs the backend service using FastAPI (execute it from inside the backend directory):
+- Launches the FastAPI server:
 ```sh
 uvicorn main:app --reload
 ```
 
+To stop and remove the MySQL container:
+```sh
+docker rm -f harmless_pennywise_db
+```
+
+---
+
+## 🙌 Contributing
+Pull requests and issues are welcome! Help us improve financial literacy for students everywhere 💸
+
+---
+
+## 📬 Contact
+For any questions or support, reach out to the team:
+- Bhavan Dondapati
+- Vamshi Krishna Battala
+- Sriram Suresh
+
+---
+
+Happy budgeting! 🎯
