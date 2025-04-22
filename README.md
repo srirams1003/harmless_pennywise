@@ -1,4 +1,4 @@
-# Harmless Pennywise: Your Friendly College Budget Companion
+# Harmless PennyWise: Your Friendly College Budget Companion
 
 Harmless Pennywise is a smart budgeting web application designed specifically for college students. It helps users:
 
