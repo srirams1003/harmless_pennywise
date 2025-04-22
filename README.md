@@ -75,7 +75,7 @@ select * from users;
 
 ---
 
-### 🎨 Frontend Setup
+### 🖼️ Frontend Setup
 
 Navigate to the frontend directory and run:
 ```sh
@@ -93,13 +93,13 @@ Access the frontend on:
 
 ## 🧠 Behind the Scenes
 
-### 📊 Data Processing & ML:
-- Uses a student spending dataset (Kaggle) with features like income, tuition, food, etc.
+### ⚙️ Data Processing & ML:
+- Uses a [Kaggle student spending dataset](https://www.kaggle.com/datasets/sumanthnimmagadda/student-spending-dataset) with features like income, tuition, food, etc.
 - Applies **Gaussian Mixture Modeling** for soft clustering into 3 categories.
 - Uses **Logistic Regression** to draw decision boundaries between categories.
 - All this powers real-time classification and feedback in the frontend.
 
-### 📈 Visualizations:
+### 📊 Visualizations:
 - **Dynamic Scatterplot**: Shows your spending position vs. peers
 - **Interactive Sliders**: Adjust spending and see instant updates
 - **Grouped Bar Chart**: Compare your category-wise spending with peer averages
