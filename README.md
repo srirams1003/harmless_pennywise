@@ -17,7 +17,7 @@ The app uses AI-driven financial categorization and offers intuitive tools to ma
 ## 🖥️ Tech Stack
 - **Frontend:** React.js, D3.js, Chart.js
 - **Backend:** Python, FastAPI
-- **Database:** MySQL (Dockerized only for local use)
+- **Database:** MySQL (Dockerized)
 - **ML Models:** Scikit-learn (GMM + Logistic Regression)
 - **Deployment:** Railway (Production)
 
