@@ -16,6 +16,7 @@ import {
 // ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, Title, Tooltip, Legend);
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, Tooltip); // unregistered Title and Legend because easier to customize this way
 
+// this is the component for the second grouped bar chart view
 const SecondView = () => {
 	// checking if input form has been filled yet STARTS HERE
 	let {dataToPlot} = useContext(DataContext);
@@ -27,6 +28,7 @@ const SecondView = () => {
 	// checking if input form has been filled yet ENDS HERE
 
 
+	//. extracting the labels and relevant data from the backend API call to help create the visual
 	const labels = Object.keys(dataToPlotCopy.all_users_average);
 	const averageData = labels.map(key => Number(dataToPlotCopy.all_users_average[key]) || 0);
 	const currentUserData = labels.map(key => Number(dataToPlotCopy.current_user[key]) || 0);
@@ -40,6 +42,7 @@ const SecondView = () => {
 		return value > averageData[index] ? 'crimson' : 'lightgreen';
 	});
 
+	// creating chartdata object to pass to Chart.js for the grouped bar chart
 	const chartData = {
 		labels: labels,
 		datasets: [
@@ -60,6 +63,7 @@ const SecondView = () => {
 		]
 	};
 
+	// creating options object to pass to chart.js for the grouped bar chart
 	const options = {
 		responsive: true,
 		plugins: {
