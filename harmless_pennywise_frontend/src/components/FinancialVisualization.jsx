@@ -29,41 +29,66 @@ const FinancialVisualization = ({ data, userInputs, financialCategory }) => {
 
   // Set up tooltip when component mounts
   useEffect(() => {
-    // Create tooltip manager instance
-    tooltipRef.current = TooltipManager.init();
+    try {
+      // Create tooltip manager instance
+      if (!tooltipRef.current) {
+        tooltipRef.current = TooltipManager.init();
+        console.log("Tooltip initialized successfully");
+      }
+    } catch (error) {
+      console.error("Error initializing tooltip:", error);
+    }
     
     // Clean up on unmount
     return () => {
-      if (tooltipRef.current) {
-        TooltipManager.cleanup(tooltipRef.current);
-        tooltipRef.current = null;
+      try {
+        if (tooltipRef.current) {
+          TooltipManager.cleanup(tooltipRef.current);
+          tooltipRef.current = null;
+        }
+      } catch (error) {
+        console.error("Error cleaning up tooltip:", error);
       }
     };
   }, []);
   
   // Build and render the chart
   useEffect(() => {
-    if (!data || !data.dataset_points || !data.dataset_points.length || !svgRef.current || !tooltipRef.current) {
-      console.log('Not ready for visualization yet');
+    if (!svgRef.current) {
+      console.log('SVG reference not ready yet');
       return;
     }
     
-    // Render the chart with all its components
-    ChartRenderer.render({
-      svgRef, 
-      data, 
-      userInputs,
-      userMetrics: {
-        userPointX,
-        userPointY,
-        monthlyIncome,
-        monthlySpending,
-        budgetMargin,
-        savingsAmount,
-        financialCategory
-      },
-      tooltipRef
-    });
+    if (!tooltipRef.current) {
+      console.log('Tooltip reference not ready yet');
+      return;
+    }
+    
+    if (!data || !data.dataset_points || !data.dataset_points.length) {
+      console.log('Data not ready for visualization yet');
+      return;
+    }
+    
+    try {
+      // Render the chart with all its components
+      ChartRenderer.render({
+        svgRef: svgRef.current, 
+        data, 
+        userInputs,
+        userMetrics: {
+          userPointX,
+          userPointY,
+          monthlyIncome,
+          monthlySpending,
+          budgetMargin,
+          savingsAmount,
+          financialCategory
+        },
+        tooltipRef
+      });
+    } catch (error) {
+      console.error("Error rendering chart:", error);
+    }
     
   }, [data, userInputs, financialCategory, userPointX, userPointY, monthlyIncome, monthlySpending, budgetMargin, savingsAmount]);
   

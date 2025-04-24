@@ -1,0 +1,167 @@
+/* Utility helper classes */
+
+/* Display utilities */
+.d-flex {
+    display: flex;
+  }
+  
+  .d-block {
+    display: block;
+  }
+  
+  .d-inline-block {
+    display: inline-block;
+  }
+  
+  .d-none {
+    display: none;
+  }
+  
+  /* Flex utilities */
+  .flex-column {
+    flex-direction: column;
+  }
+  
+  .justify-content-between {
+    justify-content: space-between;
+  }
+  
+  .justify-content-center {
+    justify-content: center;
+  }
+  
+  .align-items-center {
+    align-items: center;
+  }
+  
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  
+  /* Spacing utilities */
+  .m-0 {
+    margin: 0;
+  }
+  
+  .mt-1 {
+    margin-top: var(--spacing-xs);
+  }
+  
+  .mt-2 {
+    margin-top: var(--spacing-sm);
+  }
+  
+  .mt-3 {
+    margin-top: var(--spacing-md);
+  }
+  
+  .mb-1 {
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .mb-2 {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .mb-3 {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .p-1 {
+    padding: var(--spacing-xs);
+  }
+  
+  .p-2 {
+    padding: var(--spacing-sm);
+  }
+  
+  .p-3 {
+    padding: var(--spacing-md);
+  }
+  
+  /* Text utilities */
+  .text-center {
+    text-align: center;
+  }
+  
+  .text-right {
+    text-align: right;
+  }
+  
+  .text-light {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .text-white {
+    color: white;
+  }
+  
+  /* Position utilities */
+  .position-relative {
+    position: relative;
+  }
+  
+  .position-absolute {
+    position: absolute;
+  }
+  
+  /* Width and height utilities */
+  .w-100 {
+    width: 100%;
+  }
+  
+  .h-100 {
+    height: 100%;
+  }
+  
+  /* Border utilities */
+  .border-top {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .border-bottom {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Background utilities */
+  .bg-dark {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  .bg-panel {
+    background-color: var(--color-panel-background);
+  }
+  
+  /* Other utilities */
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  .rounded {
+    border-radius: var(--radius-md);
+  }
+  
+  .shadow-sm {
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .shadow-md {
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Visibility utils */
+  .visible {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+  
+  .hidden {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 0.2s, opacity 0.2s ease;
+  }

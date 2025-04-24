@@ -1,0 +1,27 @@
+/* Main CSS file that imports all modules */
+
+/* Base styles */
+@import './base/_variables.css';
+@import './base/_reset.css';
+@import './base/_typography.css';
+
+/* Components */
+@import './components/_buttons.css';
+@import './components/_forms.css';
+@import './components/_sliders.css';
+@import './components/_charts.css';
+@import './components/_legend.css';
+@import './components/_tooltips.css';
+
+/* Layout */
+@import './layout/_dashboard.css';
+@import './layout/_header.css';
+@import './layout/_welcome.css';
+
+/* Animations */
+@import './animations/_keyframes.css';
+
+/* Utilities */
+@import './utils/_helpers.css';
+
+/* Any additional global styles can be added here */

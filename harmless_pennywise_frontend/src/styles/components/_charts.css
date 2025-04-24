@@ -1,0 +1,10 @@
+/* Chart and visualization styles */
+
+.chart-container {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }

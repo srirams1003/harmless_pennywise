@@ -1,0 +1,216 @@
+/* Chart legend styles */
+
+/* Base legend container */
+.chart-legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: var(--z-above);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+  }
+  
+  /* Collapsed state */
+  .chart-legend.collapsed {
+    min-width: auto;
+    width: auto;
+    background-color: rgba(26, 26, 26, 0.8);
+  }
+  
+  /* Expanded state */
+  .chart-legend.expanded {
+    background-color: rgba(26, 26, 26, 0.9);
+    padding: 15px;
+    min-width: 180px;
+    max-width: 200px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  /* Toggle button for collapsed state */
+  .chart-legend-toggle-container {
+    display: inline-block;
+    position: relative;
+  }
+  
+  .chart-legend-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--color-panel-background);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: all var(--transition-fast);
+  }
+  
+  /* Create inner circle with "i" */
+  .chart-legend-toggle::before {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid white;
+    background: transparent;
+  }
+  
+  /* Create the "i" dot */
+  .chart-legend-toggle::after {
+    content: "i";
+    color: white;
+    font-family: serif;
+    font-size: 16px;
+    font-weight: bold;
+    font-style: normal;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .chart-legend-toggle:hover {
+    background-color: rgba(52, 152, 219, 0.5);
+    transform: scale(1.05);
+  }
+  
+  .legend-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+  }
+  
+  /* Header for expanded state */
+  .chart-legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+  }
+  
+  .chart-legend h3 {
+    color: white;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  /* Close button */
+  .chart-legend-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: all var(--transition-fast);
+  }
+  
+  .chart-legend-close:hover {
+    color: white;
+  }
+  
+  /* Legend items container */
+  .chart-legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  /* Individual legend item */
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+  }
+  
+  .chart-legend-item.active {
+    background-color: rgba(255,255,255,0.15);
+  }
+  
+  /* Color indicators */
+  .chart-legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-sm);
+  }
+  
+  .chart-legend-color.saver {
+    background-color: var(--color-saver);
+  }
+  
+  .chart-legend-color.balanced {
+    background-color: var(--color-balanced);
+  }
+  
+  .chart-legend-color.overspender {
+    background-color: var(--color-overspender);
+  }
+  
+  /* Legend text */
+  .chart-legend-label {
+    flex: 1;
+  }
+  
+  .chart-legend-name {
+    color: white;
+    font-size: 14px;
+    display: block;
+  }
+  
+  .chart-legend-name.active {
+    font-weight: 600;
+  }
+  
+  .chart-legend-subtitle {
+    display: block;
+    font-size: 11px;
+    color: rgba(255,255,255,0.8);
+    margin-top: 1px;
+  }
+  
+  /* Active indicator */
+  .chart-legend-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  
+  .chart-legend-indicator.saver {
+    background-color: var(--color-saver);
+  }
+  
+  .chart-legend-indicator.balanced {
+    background-color: var(--color-balanced);
+  }
+  
+  .chart-legend-indicator.overspender {
+    background-color: var(--color-overspender);
+  }
+  
+  /* Footer explanations */
+  .chart-legend-footer {
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 8px;
+  }
+  
+  .chart-legend-footer p {
+    margin: 4px 0;
+  }

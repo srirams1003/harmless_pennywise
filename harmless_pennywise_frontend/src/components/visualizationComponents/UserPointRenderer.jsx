@@ -49,7 +49,7 @@ const UserPointRenderer = {
     this.addPulsingAnimation(userPoint);
     
     // Add interactive tooltip
-    this.addTooltipInteraction(userPoint, userData, tooltip, event);
+    this.addTooltipInteraction(userPoint, userData, tooltip);
     
     // Add a label to the user point with better styling
     this.addUserLabel(svg, userPointX, userPointY, xScale, yScale);

@@ -14,22 +14,73 @@ const TooltipManager = {
     // Remove any existing tooltips first
     d3.selectAll(".financial-tooltip").remove();
     
-    // Create new tooltip
-    const tooltip = d3.select("body").append("div")
-      .attr("class", "financial-tooltip")
-      .style("position", "absolute")
-      .style("padding", "12px")
-      .style("background-color", "rgba(0, 0, 0, 0.9)")
-      .style("color", "white")
-      .style("border-radius", "8px")
-      .style("pointer-events", "none")
-      .style("font-size", "14px")
-      .style("z-index", "10000")
-      .style("display", "none")
-      .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
-      .style("border", "1px solid rgba(255,255,255,0.1)");
+    try {
+      // Create new tooltip as a D3 selection
+      const tooltip = d3.select("body").append("div")
+        .attr("class", "financial-tooltip")
+        .style("position", "absolute")
+        .style("padding", "12px")
+        .style("background-color", "rgba(0, 0, 0, 0.9)")
+        .style("color", "white")
+        .style("border-radius", "8px")
+        .style("pointer-events", "none")
+        .style("font-size", "14px")
+        .style("z-index", "10000")
+        .style("display", "none")
+        .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
+        .style("border", "1px solid rgba(255,255,255,0.1)");
+        
+      // Set a property to track detailed mode directly on the selection
+      tooltip.__isDetailedMode = false;
       
-    return tooltip;
+      return tooltip;
+    } catch (error) {
+      console.error("Error creating tooltip:", error);
+      // Create a fallback tooltip with basic styling
+      return {
+        __isDetailedMode: false,
+        style: function(prop, value) {
+          // Chainable style method
+          return this;
+        },
+        html: function(content) {
+          // Chainable html method
+          return this;
+        },
+        select: function(selector) {
+          // Mock select method
+          return {
+            on: function() { return this; }
+          };
+        },
+        node: function() {
+          return null;
+        },
+        remove: function() {
+          // Mock remove method
+        }
+      };
+    }
+  },
+  
+  /**
+   * Check if tooltip is in detailed mode
+   * @param {Object} tooltip - Tooltip object
+   * @returns {boolean} - Whether tooltip is in detailed mode
+   */
+  isDetailedMode(tooltip) {
+    return tooltip && tooltip.__isDetailedMode;
+  },
+  
+  /**
+   * Set detailed mode
+   * @param {Object} tooltip - Tooltip object
+   * @param {boolean} isDetailed - Whether tooltip should be in detailed mode
+   */
+  setDetailedMode(tooltip, isDetailed) {
+    if (tooltip) {
+      tooltip.__isDetailedMode = isDetailed;
+    }
   },
   
   /**
@@ -86,8 +137,8 @@ const TooltipManager = {
     `;
   
     // Show tooltip with preview styling
+    this.setDetailedMode(tooltip, false);
     tooltip
-      .classed("detailed-mode", false)
       .style("display", "block")
       .html(tooltipContent)
       .style("left", (event.pageX + 15) + "px")
@@ -183,10 +234,11 @@ const TooltipManager = {
       tooltipContent += '</div>';
     }
   
-    // Show tooltip with detailed styling
+    // Show tooltip with detailed styling and make it interactive
+    this.setDetailedMode(tooltip, true);
     tooltip
-      .classed("detailed-mode", true)
       .style("display", "block")
+      .style("pointer-events", "auto") // Enable pointer events when in detailed mode
       .html(tooltipContent)
       .style("left", (event.pageX + 15) + "px")
       .style("top", (event.pageY - 28) + "px");
@@ -199,11 +251,13 @@ const TooltipManager = {
       .attr('stroke-width', 2)
       .attr('stroke-opacity', 1);
       
+    const self = this;
     // Add close button event handler
     tooltip.select(".close-tooltip-btn").on("click", function() {
       // Hide tooltip and remove detailed mode
       tooltip.style("display", "none")
-        .classed("detailed-mode", false);
+             .style("pointer-events", "none"); // Disable pointer events when hidden
+      self.setDetailedMode(tooltip, false);
         
       // Reset point appearance
       d3.select(element)

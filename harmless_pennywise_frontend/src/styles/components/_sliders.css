@@ -1,0 +1,242 @@
+/* Slider styles */
+
+/* Slider Group Styles */
+.slider-group {
+    background-color: var(--color-panel-background-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .slider-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .slider-group-title {
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 500;
+    color: white;
+    margin: 0;
+  }
+  
+  .category-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  
+  .slider-group-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .slider-group-summary {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: var(--radius-md);
+    padding: 12px;
+  }
+  
+  .slider-group-summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  /* Summary Items */
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  .summary-label {
+    font-size: 12px;
+    color: #bbb;
+  }
+  
+  .summary-value {
+    font-weight: 600;
+    color: white;
+  }
+  
+  .summary-more {
+    font-size: 12px;
+    color: #999;
+    text-align: right;
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  /* Individual Slider Styles */
+  .slider-container {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+  }
+  
+  .slider-container:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  
+  .slider-label {
+    color: #e0e0e0;
+    font-size: 14px;
+  }
+  
+  .slider-value {
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  /* Fixed Slider Track Container */
+  .slider-track-container {
+    position: relative;
+    height: 6px;
+    margin: 16px 0;
+  }
+  
+  /* Custom track background */
+  .slider-track-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    z-index: 0;
+  }
+  
+  /* Fixed Slider Input Position */
+  .slider-input {
+    position: absolute;
+    top: 0px; /* Offset to center the thumb */
+    left: 0;
+    width: 100%;
+    height: 7px; /* Increased touch target area */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    z-index: 2;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Chrome/Safari/Opera Thumb Styles */
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: 2px solid var(--slider-color, #3498db);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+    transition: all var(--transition-fast);
+    transform: translateY(-4px);
+    z-index: 3;
+    margin-top:-3px;
+  }
+  
+  .slider-input:hover::-webkit-slider-thumb,
+  .slider-input:focus::-webkit-slider-thumb {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Firefox Thumb Styles */
+  .slider-input::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: 2px solid var(--slider-color, #3498db);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+    transition: all var(--transition-fast);
+    transform: translateY(-4px);
+    z-index: 3;
+    margin-top:-3px;
+  }
+  
+  .slider-input:hover::-moz-range-thumb,
+  .slider-input:focus::-moz-range-thumb {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Transparent Track Styling */
+  .slider-input::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    background: transparent; 
+    border-radius: 3px;
+  }
+  
+  .slider-input::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    background: transparent; 
+    border-radius: 3px;
+  }
+  
+  /* Progress Bar */
+  .slider-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6px;
+    border-radius: 3px;
+    z-index: 1;
+  }
+  
+  /* Tick Marks */
+  .slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #999;
+  }
+  
+  /* Category-specific Styling */
+  .income-group .category-indicator {
+    background-color: #4CAF50;
+  }
+  
+  .education-group .category-indicator {
+    background-color: #2196F3;
+  }
+  
+  .living-group .category-indicator {
+    background-color: #FF9800;
+  }
+  
+  .personal-group .category-indicator {
+    background-color: #9C27B0;
+  }
+  
+  /* Active state for sliders */
+  .slider-container:focus-within {
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+  }

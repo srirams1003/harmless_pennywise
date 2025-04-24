@@ -23,6 +23,12 @@ const ChartRenderer = {
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     
+    // Validate tooltip
+    if (!tooltipRef || !tooltipRef.current) {
+      console.warn("Missing tooltip reference in ChartRenderer");
+      return;
+    }
+    
     // Extract user metrics
     const { 
       userPointX, 
@@ -35,7 +41,13 @@ const ChartRenderer = {
     } = userMetrics;
     
     // Setup chart with enhanced styling
-    const svg = ChartSetup.setupChart(svgRef.current, width, height, margin);
+    const svg = ChartSetup.setupChart(svgRef, width, height, margin);
+    
+    // Validate data before continuing
+    if (!data || !data.dataset_points || !data.dataset_points.length) {
+      console.warn("Invalid data structure for visualization");
+      return;
+    }
     
     // Extract data values for scaling
     const dataXValues = data.dataset_points.map(d => d[1]); // budget_margin
@@ -61,7 +73,7 @@ const ChartRenderer = {
     BoundaryRenderer.drawBoundaryAreas(svg, data, xScale, yScale, innerWidth, innerHeight);
     
     // Draw data points
-    PointRenderer.drawDataPoints(svg, data, xScale, yScale, colorScale, tooltipRef);
+    PointRenderer.drawDataPoints(svg, data, xScale, yScale, colorScale, tooltipRef.current);
     
     // Draw axes
     AxesRenderer.drawAxes(svg, xScale, yScale, innerWidth, innerHeight);
@@ -73,7 +85,7 @@ const ChartRenderer = {
       userPointY, 
       xScale, 
       yScale, 
-      tooltipRef,
+      tooltipRef.current,
       monthlyIncome, 
       monthlySpending, 
       budgetMargin, 

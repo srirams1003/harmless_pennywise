@@ -56,7 +56,7 @@ const PointRenderer = {
       })
       .on("mouseout", function() {
         // Hide tooltip on mouseout unless it's in detailed mode
-        if (!tooltip.classed("detailed-mode")) {
+        if (!TooltipManager.isDetailedMode(tooltip)) {
           tooltip.style("display", "none");
           
           // Restore point appearance
@@ -70,7 +70,7 @@ const PointRenderer = {
       })
       .on("mousemove", function(event) {
         // Only move tooltip if not in detailed mode
-        if (!tooltip.classed("detailed-mode")) {
+        if (!TooltipManager.isDetailedMode(tooltip)) {
           tooltip
             .style("left", (event.pageX + 15) + "px")
             .style("top", (event.pageY - 28) + "px");
@@ -80,21 +80,21 @@ const PointRenderer = {
         // Show detailed tooltip on click
         TooltipManager.showDetailed(event, d, this, tooltip, colorScale, data);
         
-        // Mark tooltip as in detailed mode
-        tooltip.classed("detailed-mode", true);
-        
         // Prevent event from bubbling to the SVG background
         event.stopPropagation();
       });
         
     // Add click handler to document to dismiss detailed tooltip
     d3.select("body").on("click.dismiss-tooltip", function(event) {
+      const tooltipNode = tooltip.node();
+      
       // If clicking anywhere other than the tooltip or a data point
-      if (!tooltip.node().contains(event.target) && 
+      if (tooltipNode && !tooltipNode.contains(event.target) && 
           event.target.tagName.toLowerCase() !== 'circle') {
         // Hide the tooltip and remove detailed mode
         tooltip.style("display", "none")
-          .classed("detailed-mode", false);
+               .style("pointer-events", "none"); // Ensure pointer events are disabled
+        TooltipManager.setDetailedMode(tooltip, false);
           
         // Reset all data points to normal appearance
         svg.selectAll('circle.data-point')

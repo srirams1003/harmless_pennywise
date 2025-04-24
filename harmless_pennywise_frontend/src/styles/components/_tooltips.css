@@ -1,0 +1,64 @@
+/* Tooltip styles */
+
+.financial-tooltip {
+    position: absolute;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    border-radius: var(--radius-md);
+    z-index: var(--z-tooltip);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 300px;
+    transition: all var(--transition-fast);
+  }
+  
+  .tooltip-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .tooltip-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    font-weight: normal;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  
+  .tooltip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    align-items: center;
+  }
+  
+  .tooltip-label {
+    color: rgba(255,255,255,0.7);
+  }
+  
+  .tooltip-value {
+    text-align: right;
+    font-weight: 600;
+  }
+  
+  .close-tooltip-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    margin-left: 8px;
+  }
+  
+  .close-tooltip-btn:hover {
+    color: white;
+  }
