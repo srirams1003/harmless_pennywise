@@ -104,9 +104,9 @@ const useCalculateFinancialMetrics = (userInputs) => {
   const calculateLocalMetrics = () => {
     // Adjust tuition, financial_aid, and books_supplies by dividing by 4 (semester to monthly)
     const adjustedUserInputs = {...userInputs};
-    adjustedUserInputs.tuition = adjustedUserInputs.tuition / 4;
-    adjustedUserInputs.financial_aid = adjustedUserInputs.financial_aid / 4;
-    adjustedUserInputs.books_supplies = adjustedUserInputs.books_supplies / 4;
+    adjustedUserInputs.tuition = adjustedUserInputs.tuition / 6;
+    adjustedUserInputs.financial_aid = adjustedUserInputs.financial_aid / 6;
+    adjustedUserInputs.books_supplies = adjustedUserInputs.books_supplies / 6;
     
     const monthlyIncome = userInputs.monthly_income + adjustedUserInputs.financial_aid;
     const monthlySpending = Object.entries(adjustedUserInputs).reduce((sum, [key, value]) => {
