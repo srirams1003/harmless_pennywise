@@ -25,6 +25,9 @@ const InputForm = () => {
     preferred_payment_method: ''
   });
 
+  // Add state for validation errors
+  const [errors, setErrors] = useState({});
+  const [showErrors, setShowErrors] = useState(false);
   const [activeSection, setActiveSection] = useState('personal');
   const [formProgress, setFormProgress] = useState(0);
 
@@ -49,7 +52,12 @@ const InputForm = () => {
     }
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // // For development only - prefill form data
+    // Clear error for this field when user starts typing
+    if (errors[e.target.name]) {
+      setErrors(prev => ({ ...prev, [e.target.name]: null }));
+    }
+
+    // For development only - prefill form data
     // setFormData({
     //   "age": 22,
     //   "gender": "Male",
@@ -71,8 +79,87 @@ const InputForm = () => {
     // });
   };
 
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    // Validate all required fields
+    for (const key in formData) {
+      // Check if field is empty or contains only whitespace
+      if (formData[key] === '' || formData[key] === null || formData[key] === undefined) {
+        newErrors[key] = `required`;
+        isValid = false;
+      }
+    }
+
+    // Additional validation rules can be added here
+    // For example, ensuring numerical values are positive
+    const numericFields = [
+      'monthly_income', 'financial_aid', 'tuition', 'housing', 'food', 
+      'transportation', 'books_supplies', 'entertainment', 'personal_care', 
+      'technology', 'health_wellness', 'miscellaneous'
+    ];
+
+    numericFields.forEach(field => {
+      if (formData[field] !== '' && formData[field] !== null && formData[field] !== undefined && parseFloat(formData[field]) < 0) {
+        newErrors[field] = `${fieldLabels[field]} cannot be negative`;
+        isValid = false;
+      }
+    });
+
+    // Age validation
+    if (formData.age !== '' && formData.age !== null && formData.age !== undefined && (parseInt(formData.age) < 15 || parseInt(formData.age) > 100)) {
+      newErrors.age = 'Age must be between 15 and 100';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // Find first section with errors (for navigation)
+  const findSectionWithErrors = () => {
+    for (const section in formSections) {
+      for (const field of formSections[section]) {
+        if (errors[field]) {
+          return section;
+        }
+      }
+    }
+    return activeSection; // Fallback to current section
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const isValid = validateForm();
+    
+    // If validation fails, show errors and navigate to first section with errors
+    if (!isValid) {
+      setShowErrors(true);
+      const errorSection = findSectionWithErrors();
+      setActiveSection(errorSection);
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'form-notification error';
+      notification.innerHTML = '<span>✗</span> Please complete all required fields.';
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.classList.add('show');
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 2000);
+      }, 100);
+      
+      return;
+    }
+    
     try {
       console.log('Sending Data:', formData);
 
@@ -104,7 +191,7 @@ const InputForm = () => {
 
       console.log("received response from backend for averages: ", result["all_users_average"]);
       
-      // Replace alert with a more elegant notification
+      // Show success notification
       const notification = document.createElement('div');
       notification.className = 'form-notification success';
       notification.innerHTML = '<span>✓</span> Form submitted successfully!';
@@ -121,12 +208,16 @@ const InputForm = () => {
       
       console.log("received response from backend for form submission: ", result);
 
+      // Reset validation state
+      setErrors({});
+      setShowErrors(false);
+      
       setSubmittedFormData(formData); // Save for future unhide
       setShowForm(false); // hide form after form has been submitted
     } catch (error) {
       console.error('Error submitting form:', error);
       
-      // Replace alert with a more elegant error notification
+      // Show error notification
       const notification = document.createElement('div');
       notification.className = 'form-notification error';
       notification.innerHTML = '<span>✗</span> Submission failed. Please try again.';
@@ -191,26 +282,6 @@ const InputForm = () => {
     payment: '#ec4899' // Pink from button gradient
   };
 
-  const sectionInputTypes = {
-    'age': 'number',
-    'gender': 'text',
-    'year_in_school': 'text',
-    'major': 'text',
-    'monthly_income': 'number',
-    'financial_aid': 'number',
-    'tuition': 'number',
-    'housing': 'number',
-    'food': 'number',
-    'transportation': 'number',
-    'books_supplies': 'number',
-    'entertainment': 'number',
-    'personal_care': 'number',
-    'technology': 'number',
-    'health_wellness': 'number',
-    'miscellaneous': 'number',
-    'preferred_payment_method': 'text',
-  };
-
   return (
     <div className="form-container">
 		
@@ -225,22 +296,28 @@ const InputForm = () => {
       </div>
       
       <div className="form-tabs">
-        {Object.keys(formSections).map(section => (
-          <button
-            key={section}
-            className={`form-tab ${activeSection === section ? 'active' : ''}`}
-            onClick={() => setActiveSection(section)}
-            style={{ 
-              '--tab-color': sectionColors[section],
-              '--tab-glow-opacity': activeSection === section ? '0.5' : '0' 
-            }}
-          >
-            <span>{sectionTitles[section]}</span>
-          </button>
-        ))}
+        {Object.keys(formSections).map(section => {
+          // Check if this section has errors
+          const hasErrors = formSections[section].some(field => errors[field]);
+          
+          return (
+            <button
+              key={section}
+              className={`form-tab ${activeSection === section ? 'active' : ''} ${hasErrors && showErrors ? 'has-error' : ''}`}
+              onClick={() => setActiveSection(section)}
+              style={{ 
+                '--tab-color': hasErrors && showErrors ? '#e74c3c' : sectionColors[section],
+                '--tab-glow-opacity': activeSection === section ? '0.5' : '0' 
+              }}
+            >
+              <span>{sectionTitles[section]}</span>
+              {hasErrors && showErrors && <span className="error-indicator">!</span>}
+            </button>
+          );
+        })}
       </div>
       
-      <form id="input-form" onSubmit={handleSubmit}>
+      <form id="input-form" onSubmit={handleSubmit} noValidate>
         {Object.keys(formSections).map(section => (
           <div 
             key={section}
@@ -256,9 +333,10 @@ const InputForm = () => {
             
             <div className="section-fields">
               {formSections[section].map(key => (
-                <div className="form-field" key={key}>
+                <div className={`form-field ${errors[key] && showErrors ? 'has-error' : ''}`} key={key}>
                   <label className="form-field-label" htmlFor={key}>
                     {fieldLabels[key] || key.replace(/_/g, ' ')}
+                    <span className="required-indicator">*</span>
                   </label>
                   
                   {key === 'gender' || key === 'year_in_school' || key === 'preferred_payment_method' ? (
@@ -268,8 +346,9 @@ const InputForm = () => {
                         name={key} 
                         value={formData[key]} 
                         onChange={handleChange} 
-                        required
-                        className="form-select"
+                        className={`form-select ${errors[key] && showErrors ? 'error-border' : ''}`}
+                        aria-invalid={errors[key] && showErrors ? "true" : "false"}
+                        aria-describedby={errors[key] && showErrors ? `${key}-error` : null}
                       >
                         {key === 'gender' && <>
                           <option value="">Select Gender</option>
@@ -298,14 +377,20 @@ const InputForm = () => {
                   ) : (
                     <input
                       id={key}
-                      type={sectionInputTypes[key] || 'text'}
+                      type={typeof formData[key] === 'number' ? 'number' : 'text'}
                       name={key}
-                      value={formData[key]}
+                      value={formData[key] || ''}
                       onChange={handleChange}
-                      required
-                      className="form-input"
+                      className={`form-input ${errors[key] && showErrors ? 'error-border' : ''}`}
                       placeholder={key.includes('income') || key.includes('aid') || key.includes('tuition') ? 'Enter amount in USD' : ''}
+                      aria-invalid={errors[key] && showErrors ? "true" : "false"}
+                      aria-describedby={errors[key] && showErrors ? `${key}-error` : null}
                     />
+                  )}
+                  
+                  {/* Error message display */}
+                  {errors[key] && showErrors && (
+                    <div id={`${key}-error`} className="error-message">{errors[key]}</div>
                   )}
                 </div>
               ))}
