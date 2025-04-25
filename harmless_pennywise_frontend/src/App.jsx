@@ -5,6 +5,7 @@ import FirstView from  './FirstView';
 import InputForm from  './InputForm';
 import SecondView from  './SecondView';
 
+// separating this into a different component for ease of use with the React Context API
 function AppContent() {
 	const { showForm, setShowForm } = useContext(DataContext);
 
@@ -37,7 +38,7 @@ function AppContent() {
 
 				{showForm && <InputForm />}
 
-				<div id="two-view-components-container" style={{display: 'flex', flexDirection: 'column'}}> {/* TODO: need to change flexdirection later to row*/}
+				<div id="two-view-components-container" style={{display: 'flex', flexDirection: 'column'}}>
 					<FirstView />
 					<SecondView />
 				</div>
@@ -46,9 +47,8 @@ function AppContent() {
 	);
 }
 
-// TODO: need to figure out the final layout of our platform. Right now, every thing is just one followed by the other below it. Need to put things next  to each other, especially the sliders for view1 and view1's scatterplot should be side by side, according to our design
 function App() {
-
+	// wrapping our main app with the React context API to share data between different components
 	return (
 		<DataProvider>
 			<AppContent />

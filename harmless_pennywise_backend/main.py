@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import pymysql
 from database import get_db_connection
 from pydantic import BaseModel
 import numpy as np
@@ -9,18 +8,20 @@ import pickle
 
 app = FastAPI()
 
+# Define allowed origins for CORS (Cross-Origin Resource Sharing)
 origins = [
-    "http://localhost:5173",  # Or the specific origin of your React app
-    "http://localhost",       # In case you access it without the port
-    "*"                      # Optional, allows all origins (for development, not recommended for production)
+    "http://localhost:5173",  # React app origin
+    "http://localhost",       # Access without port
+    "*"                       # Allow all origins (for development only, not recommended for production)
 ]
 
+# Add CORS middleware to handle cross-origin requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all HTTP methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 def calculate_metrics(user_inputs: dict):
@@ -28,28 +29,29 @@ def calculate_metrics(user_inputs: dict):
     Calculate financial metrics based on user inputs.
     Adjust tuition, financial aid, and books_supplies by dividing by 4 (semester to monthly).
     """
-    # Adjust semester-based inputs to monthly
+    # Create a copy of user inputs to avoid modifying the original data
     adjusted_user_inputs = user_inputs.copy()
     
+    # Adjust semester-based inputs to monthly values
     adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 6
     adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 6
     adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 6
 
-    # Calculate monthly income
+    # Calculate monthly income by adding financial aid to user-provided income
     monthly_income = user_inputs["monthly_income"] + adjusted_user_inputs["financial_aid"]
     
-    # Calculate monthly spending
+    # Calculate total monthly spending by summing all relevant expenses
     monthly_spending = sum(
         value for key, value in adjusted_user_inputs.items()
         if key not in ["monthly_income", "financial_aid"] and type(value) in [int, float]
     )
     
     # Calculate financial metrics
-    budget_margin =  monthly_spending - monthly_income 
-    savings_amount = monthly_income - monthly_spending  
-    savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0
+    budget_margin = monthly_spending - monthly_income  # Difference between spending and income
+    savings_amount = monthly_income - monthly_spending  # Amount saved after spending
+    savings_rate = (savings_amount / monthly_income) * 100 if monthly_income != 0 else 0  # Savings rate as a percentage
     
-    # User point coordinates (using monthly values)
+    # User point coordinates for visualization
     user_point_x = budget_margin
     user_point_y = monthly_spending
 
@@ -66,40 +68,39 @@ def calculate_metrics(user_inputs: dict):
 
 @app.get("/")
 def read_root():
+    # Root endpoint to verify API is running
     return {"message": "Welcome to Harmless Pennywise API"}
 
-# Fetch all users
+# Fetch all users from the database
 @app.get("/users")
 def get_users():
     conn = get_db_connection()
     with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM users")  # Assuming `users` table exists
+        cursor.execute("SELECT * FROM users")  # Query to fetch all users
         result = cursor.fetchall()
     conn.close()
     return result
 
-# Insert a new user
-# TODO: this method needs to be modified because we do not have add user names into the db. At least, that's how the dataset we use does things.
-# this is just a sample method below
+# Insert a new user into the database
 @app.post("/users")
 def add_user(name: str, age: int):
+    # TODO: Modify this method to align with the dataset structure (e.g., no user names in the dataset)
     conn = get_db_connection()
     with conn.cursor() as cursor:
-        sql = "INSERT INTO users (name, age) VALUES (%s, %s)"
+        sql = "INSERT INTO users (name, age) VALUES (%s, %s)"  # SQL query to insert user
         cursor.execute(sql, (name, age))
         conn.commit()
     conn.close()
     return {"message": "User added successfully!"}
 
-
 @app.post("/initial_data")
 def make_initial_data():
+    """
+    Load pre-trained logistic regression models and dataset to generate initial data
+    for visualization and analysis.
+    """
     try:
-        import pickle
-        import numpy as np
-        import pandas as pd
-
-        # Load boundary_models
+        # Load logistic regression models for decision boundaries
         with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
             boundary_models = pickle.load(f)
 
@@ -113,11 +114,11 @@ def make_initial_data():
         max_margin = np.round(df["spending_margin"].max())
         x_vals = np.array([max_margin - 1, max_margin])
 
-        # Compute decision boundaries
+        # Compute decision boundaries using logistic regression coefficients
         boundary_1_y = -(log_reg_saver_balanced.coef_[0][0] * x_vals + log_reg_saver_balanced.intercept_[0]) / log_reg_saver_balanced.coef_[0][1]
         boundary_2_y = -(log_reg_balanced_overspender.coef_[0][0] * x_vals + log_reg_balanced_overspender.intercept_[0]) / log_reg_balanced_overspender.coef_[0][1]
 
-        # Convert to lists for return
+        # Convert boundary coordinates to lists for JSON serialization
         x_vals = x_vals.tolist()
         boundary_1_y = boundary_1_y.tolist()
         boundary_2_y = boundary_2_y.tolist()
@@ -127,18 +128,19 @@ def make_initial_data():
             "balanced_overspender": [[x_vals[0], boundary_2_y[0]], [x_vals[1], boundary_2_y[1]]],
         }
 
-        # Replace spending_ratio with spending_margin in dataset_points
+        # Replace spending_ratio with spending_margin in dataset points
         dataset_points = [
             [row['spending_category'], row['spending_margin'], row['total_spending']]
             for _, row in df.iterrows()
         ]
 
+        # Load original dataset for additional processing
         df_original = pd.read_csv("student_spending.csv")
         if "Unnamed: 0" in df_original.columns:
             df_original = df_original.drop(columns=["Unnamed: 0"])
         original_points = df_original.to_dict(orient='records')
 
-        # Calculate metrics for each data point
+        # Calculate metrics for each data point in the original dataset
         metrics = []
         for data_point in original_points:
             try:
@@ -165,7 +167,7 @@ def make_initial_data():
         }
     except Exception as e:
         print(f"Error in make_initial_data: {str(e)}")
-        # Return a fallback response with minimal data
+        # Return a fallback response with minimal data in case of error
         return {
             "boundary_coordinates": {
                 "saver_balanced": [[0, 0], [100, 100]],
@@ -176,6 +178,7 @@ def make_initial_data():
             "metrics": []
         }
 
+# Define the input model for student financial data
 class StudentInput(BaseModel):
     age: int
     gender: str
@@ -195,50 +198,50 @@ class StudentInput(BaseModel):
     miscellaneous: float
     preferred_payment_method: str
 
-
 @app.post("/calculate_financial_metrics")
 def calculate_financial_metrics(user_inputs: dict):
     """
-    Calculate financial metrics based on user inputs.
-    Adjust tuition, financial aid, and books_supplies by dividing by 4 (semester to monthly).
+    Endpoint to calculate financial metrics based on user inputs.
     """
     return calculate_metrics(user_inputs)
 
 @app.post("/predict_category")
-# Define function to predict using logistic regression decision boundaries
 def predict_spending_category(new_data: StudentInput):
     """
-    Predicts the spending category for a new student using logistic regression boundaries
+    Predict the spending category for a new student using logistic regression boundaries
     trained on spending_margin and total_spending.
     """
+    # Convert input data to dictionary
     new_data = new_data.model_dump()
 
-    # Process semester-based columns
+    # Process semester-based columns to monthly values
     semester_based_cols = ["tuition", "financial_aid", "books_supplies"]
     for col in semester_based_cols:
         new_data[f"{col}_monthly"] = round(new_data[col] / 6)
 
-    # Calculate total spending
+    # Calculate total spending by summing relevant features
     spending_features = ["food", "entertainment", "miscellaneous", "housing", "transportation",
                          "books_supplies_monthly", "personal_care", "technology", "health_wellness", "tuition_monthly"]
     new_data["total_spending"] = sum(new_data[col] for col in spending_features)
 
-    # Calculate spending margin
+    # Calculate spending margin (difference between spending and income)
     new_data["spending_margin"] = new_data["total_spending"] - (new_data["monthly_income"] + new_data["financial_aid_monthly"])
 
-    # Prepare for prediction
+    # Prepare data for prediction
     new_data_df = pd.DataFrame([{
         "spending_margin": new_data["spending_margin"],
         "total_spending": new_data["total_spending"]
     }])
 
-    # Load logistic regression models
+    # Load logistic regression models for prediction
     with open("./spending_analysis_outputs/boundary_models.pkl", "rb") as f:
         boundary_models = pickle.load(f)
 
+    # Predict probabilities for each category
     prob_sb = boundary_models["saver_balanced"].predict_proba(new_data_df)[0][1]
     prob_bo = boundary_models["balanced_overspender"].predict_proba(new_data_df)[0][1]
 
+    # Determine category based on probabilities
     if prob_sb < 0.5:
         category_label = "Saver"
     elif prob_bo < 0.5:
@@ -251,6 +254,7 @@ def predict_spending_category(new_data: StudentInput):
     if "Unnamed: 0" in df.columns:
         df = df.drop(columns=["Unnamed: 0"])
 
+    # Calculate averages for each feature
     averages = {
         "monthly_income": df['monthly_income'].mean(),
         "financial_aid": df['financial_aid'].mean(),
@@ -270,4 +274,3 @@ def predict_spending_category(new_data: StudentInput):
         "all_users_average": averages,
         "datapoint": [category_label, new_data["spending_margin"], new_data["total_spending"]]
     }
-
