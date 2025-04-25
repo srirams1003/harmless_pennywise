@@ -38,7 +38,13 @@ const InputForm = () => {
   const handleChange = (e) => {
     // Comment out the prefill during production
     let { name, value } = e.target;
-    if (!isNaN(value)) {
+
+    // Prevent setting negative numbers
+    if (e.target.type === 'number' && parseFloat(value) < 0) {
+      return;
+    }
+
+    if (value !== '' && !isNaN(value)) {
       value = parseFloat(value);
     }
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -185,6 +191,26 @@ const InputForm = () => {
     payment: '#ec4899' // Pink from button gradient
   };
 
+  const sectionInputTypes = {
+    'age': 'number',
+    'gender': 'text',
+    'year_in_school': 'text',
+    'major': 'text',
+    'monthly_income': 'number',
+    'financial_aid': 'number',
+    'tuition': 'number',
+    'housing': 'number',
+    'food': 'number',
+    'transportation': 'number',
+    'books_supplies': 'number',
+    'entertainment': 'number',
+    'personal_care': 'number',
+    'technology': 'number',
+    'health_wellness': 'number',
+    'miscellaneous': 'number',
+    'preferred_payment_method': 'text',
+  };
+
   return (
     <div className="form-container">
 		
@@ -272,7 +298,7 @@ const InputForm = () => {
                   ) : (
                     <input
                       id={key}
-                      type={typeof formData[key] === 'number' ? 'number' : 'text'}
+                      type={sectionInputTypes[key] || 'text'}
                       name={key}
                       value={formData[key]}
                       onChange={handleChange}
