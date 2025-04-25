@@ -1,0 +1,82 @@
+/* Typography styles */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    line-height: 1.1;
+  }
+  
+  h1 {
+    font-size: 3.2em;
+  }
+  
+  h2 {
+    font-size: 2.4em;
+  }
+  
+  h3 {
+    font-size: 1.8em;
+  }
+  
+  p {
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  a {
+    font-weight: 500;
+    color: #646cff;
+    text-decoration: inherit;
+  }
+  
+  a:hover {
+    color: #535bf2;
+  }
+  
+  /* Gradient text styling */
+  .app-font {
+    background: var(--color-gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  /* Text size utilities */
+  .text-xs {
+    font-size: 0.75rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .text-md {
+    font-size: 1rem;
+  }
+  
+  .text-lg {
+    font-size: 1.125rem;
+  }
+  
+  .text-xl {
+    font-size: 1.25rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem;
+  }
+  
+  /* Text weight utilities */
+  .font-normal {
+    font-weight: 400;
+  }
+  
+  .font-medium {
+    font-weight: 500;
+  }
+  
+  .font-semibold {
+    font-weight: 600;
+  }
+  
+  .font-bold {
+    font-weight: 700;
+  }

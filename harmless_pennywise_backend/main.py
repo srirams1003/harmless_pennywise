@@ -33,9 +33,9 @@ def calculate_metrics(user_inputs: dict):
     adjusted_user_inputs = user_inputs.copy()
     
     # Adjust semester-based inputs to monthly values
-    adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 4
-    adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 4
-    adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 4
+    adjusted_user_inputs["tuition"] = adjusted_user_inputs["tuition"] / 6
+    adjusted_user_inputs["financial_aid"] = adjusted_user_inputs["financial_aid"] / 6
+    adjusted_user_inputs["books_supplies"] = adjusted_user_inputs["books_supplies"] / 6
 
     # Calculate monthly income by adding financial aid to user-provided income
     monthly_income = user_inputs["monthly_income"] + adjusted_user_inputs["financial_aid"]
